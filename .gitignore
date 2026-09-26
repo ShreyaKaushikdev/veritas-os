@@ -33,3 +33,6 @@ Thumbs.db
 .parcel-cache
 .cache
 *.tsbuildinfo
+# Database
+*.db
+*.db-journal

@@ -1,21 +1,21 @@
 ================================================================================
 DOGFOOD OS — FORMAL ACCEPTANCE & BENCHMARK REPORT
-Generated: 2026-09-26T18:06:31.420Z
+Generated: 2026-09-26T19:04:08.810Z
 Target: Hackathon MVP / Release v1.0
 Overall Status: VERIFIED GREEN (PASS)
-Total Test Duration: 0.56s
+Total Test Duration: 0.28s
 ================================================================================
 
 EXECUTIVE RECEIPT SUMMARY:
-[PASS] B1: Cold Start & Seed Baseline           -> Seeded database verified: 40 projects, 30 judges, 120 ballots, 163 hash nodes in 0.23s (< 90s target)
+[PASS] B1: Cold Start & Seed Baseline           -> Seeded database verified: 40 projects, 30 judges, 120 ballots, 164 hash nodes in 0.15s (< 90s target)
 [PASS] B2: Backend Role Isolation Matrix        -> 100% role isolation verified: 4/4 unauthorized actions rejected with HTTP 403 Forbidden
-[PASS] B3: Cryptographic Tamper Detection       -> Verified 163 chained hash nodes in 23ms. Tampering detected mathematically in < 1s.
+[PASS] B3: Cryptographic Tamper Detection       -> Verified 164 chained hash nodes in 16ms. Tampering detected mathematically in < 1s.
 [PASS] B4: Disagreement Uncertainty Routing     -> Identified 1 high-dispersion disagreement cases (σ >= 1.5). Adaptive policy successfully routes 4th review.
 [PASS] B5: Weight Sensitivity Non-Mutation      -> Sandbox simulation executed without mutating database state (1 runs preserved). Rank delta computation verified.
 [PASS] B6: Offline Air-Gap Guarantee            -> Zero external cloud dependencies verified: AI_PROVIDER=off uses deterministic rubric alignment, scope pressure, and blindspot heuristics.
 [PASS] B7: SOS Beacon, Anti-Herding & Privacy   -> Auto-triage keyword priority verified (URGENT/HIGH/NORMAL), anti-herding lock guarded, 0 opt-in recipients isolated (73 non-opt-in strictly excluded from broadcasts).
 [PASS] B8: Recusal, Feedback & Tie-Breaks       -> Judge self-recusal flow guarded, entrant feedback anonymization verified (100% PII scrubbed), 3-tier deterministic tie-break cascade verified (Rubric Priority -> Consensus -> Earliest Freeze).
-[PASS] B9: Spike Load & Pairwise Normalization Proof -> Spike-hardening verified: p95 snapshot latency = 3ms (< 500ms target, avg 1.4ms across concurrent reads); Pairwise Bradley-Terry Elo (+10 pts) chained; Normalization proof theorem verified; Multi-sig organizer sign-offs logged.
+[PASS] B9: Spike Load & Pairwise Normalization Proof -> Spike-hardening verified: p95 snapshot latency = 2ms (< 500ms target, avg 0.8ms across concurrent reads); Pairwise Bradley-Terry Elo (+10 pts) chained; Normalization proof theorem verified; Multi-sig organizer sign-offs logged.
 
 TIER CLAIMS VERIFICATION:
   ✓ Tier 1 (P0 Foundation): PASS (Local auth, roles, event lifecycle, team invite, deadline freeze, gallery)
