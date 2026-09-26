@@ -4,10 +4,29 @@ version = "1.0.0"
 license = "MIT"
 pitch = "The self-hosted, offline-first operating system for fair judged events. From idea intake to published results, every decision is explainable, auditable, portable, and runnable with one command."
 
+[portal]
+base_url = "http://localhost:4000"
+
+[tiers]
+claimed = ["T1", "T2"]
+
+[routes]
+gallery = "/gallery"
+submit = "/submit"
+judge_scores = "/judge/scores"
+peer_scores = "/judge/scores/jdg_08"
+csv_export = "/export/csv"
+
+[auth]
+participant = "Authorization: Bearer participant-token"
+judge_a = "Authorization: Bearer judge-a-token"
+judge_b = "Authorization: Bearer judge-b-token"
+organizer = "Authorization: Bearer organizer-token"
+
 [tier_claim]
 tier_1_core = "PASS"
 tier_2_judging = "PASS"
-signature_slice = "PASS" # Idea Potential Report + Disagreement Routing + Trust Center + 3D Moments
+signature_slice = "PASS"
 offline_guarantee = "PASS"
 audit_tamper_detection = "PASS"
 
@@ -25,7 +44,7 @@ three_dimensional_visuals = true
 [deployment]
 primary = "docker compose up"
 cold_start_seconds = 45
-data_storage = "PostgreSQL 16"
+data_storage = "MongoDB 7.0 / PostgreSQL 16"
 queue_storage = "Redis 7"
 object_storage = "MinIO (Local S3)"
 mail_preview = "MailHog"

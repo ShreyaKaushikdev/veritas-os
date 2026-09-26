@@ -3,6 +3,7 @@ import { MongoService } from './mongo.service';
 import { DatabaseController, DashboardController, JudgingMongoController } from './database.controller';
 import { ProjectsMongoController, TrustMongoController } from './projects-mongo.controller';
 import { AutopilotController } from './autopilot.controller';
+import { DogfoodController } from './dogfood.controller';
 
 @Global()
 @Module({
@@ -13,6 +14,7 @@ import { AutopilotController } from './autopilot.controller';
     JudgingMongoController,
     TrustMongoController,
     AutopilotController,
+    DogfoodController,
   ],
   providers: [MongoService],
   exports: [MongoService],
