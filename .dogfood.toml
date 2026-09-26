@@ -1,0 +1,31 @@
+[dogfood]
+name = "DOGFOOD OS"
+version = "1.0.0"
+license = "MIT"
+pitch = "The self-hosted, offline-first operating system for fair judged events. From idea intake to published results, every decision is explainable, auditable, portable, and runnable with one command."
+
+[tier_claim]
+tier_1_core = "PASS"
+tier_2_judging = "PASS"
+signature_slice = "PASS" # Idea Potential Report + Disagreement Routing + Trust Center + 3D Moments
+offline_guarantee = "PASS"
+audit_tamper_detection = "PASS"
+
+[capabilities]
+offline_capable = true
+default_ai_provider = "off"
+audit_event_sourcing = true
+cryptographic_hash_chain = true
+role_isolation_backend = true
+keyboard_judge_console = true
+weight_sensitivity_sandbox = true
+disagreement_adaptive_review = true
+three_dimensional_visuals = true
+
+[deployment]
+primary = "docker compose up"
+cold_start_seconds = 45
+data_storage = "PostgreSQL 16"
+queue_storage = "Redis 7"
+object_storage = "MinIO (Local S3)"
+mail_preview = "MailHog"

@@ -1,0 +1,875 @@
+openapi: 3.0.0
+paths:
+  /database/status:
+    get:
+      operationId: DatabaseController_getStatus
+      summary: Get live MongoDB connection status & collection statistics
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: &ref_0
+        - Database & Telemetry
+  /database/clear:
+    post:
+      operationId: DatabaseController_clear
+      summary: >-
+        Clear all mock and seeded data to run purely on live participant and
+        judge records
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_0
+  /database/reseed:
+    post:
+      operationId: DatabaseController_reseed
+      summary: 'Sandbox Only: Populate demo hackathon state'
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_0
+  /dashboard/stats:
+    get:
+      operationId: DashboardController_getStats
+      summary: >-
+        Fetch live executive dashboard telemetry calculated directly from
+        MongoDB
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - Command Dashboard
+  /projects:
+    get:
+      operationId: ProjectsMongoController_getProjects
+      summary: >-
+        Fetch all hackathon projects from MongoDB with search, track filter, and
+        sorting
+      parameters:
+        - name: track
+          required: false
+          in: query
+          description: Filter by competitive track
+          schema:
+            type: string
+        - name: search
+          required: false
+          in: query
+          description: Filter by project title or keyword
+          schema:
+            type: string
+        - name: sort
+          required: false
+          in: query
+          description: Sort criteria
+          schema:
+            enum:
+              - rank
+              - elo
+              - title
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &ref_1
+        - Projects (MongoDB)
+    post:
+      operationId: ProjectsMongoController_createProject
+      summary: Submit a new project to MongoDB
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_1
+  /projects/{id}:
+    get:
+      operationId: ProjectsMongoController_getProjectById
+      summary: Get single project details and assigned ballots from MongoDB
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Project ID (e.g. proj-01)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_1
+  /projects/leaderboard/tracks:
+    get:
+      operationId: ProjectsMongoController_getTrackLeaderboard
+      summary: Aggregated track-by-track leaderboard analytics from MongoDB
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *ref_1
+  /projects/export/json:
+    get:
+      operationId: ProjectsMongoController_exportFullDatabase
+      summary: >-
+        Full archival export of MongoDB projects, ballots, and ledger for
+        compliance audit
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *ref_1
+  /judging/ballots:
+    post:
+      operationId: JudgingMongoController_submitLiveBallot
+      summary: >-
+        Record a live signed judge ballot into MongoDB with cryptographic
+        receipt
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+        - Live Judging & Ballots
+  /trust/ledger:
+    get:
+      operationId: TrustMongoController_getLedger
+      summary: Fetch immutable Merkle DAG blocks from MongoDB
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: &ref_2
+        - Trust & Ledger (MongoDB)
+  /trust/commit:
+    post:
+      operationId: TrustMongoController_commitBlock
+      summary: Anchor and seal uncommitted ballots into a new Merkle block in MongoDB
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_2
+  /trust/verify/{receiptId}:
+    get:
+      operationId: TrustMongoController_verifyReceipt
+      summary: Verify a ballot receipt SHA-256 against the MongoDB Merkle root
+      parameters:
+        - name: receiptId
+          required: true
+          in: path
+          description: Ballot ID or hash
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_2
+  /autopilot/presets:
+    get:
+      operationId: AutopilotController_getPresets
+      summary: Get ready-to-use prompt presets for hackathon auto-configuration
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: &ref_3
+        - Autonomous Hackathon Orchestrator
+  /autopilot/synthesize:
+    post:
+      operationId: AutopilotController_synthesizeHackathon
+      summary: >-
+        Autonomous Prompt-to-Hackathon: Synthesize complete event, tracks,
+        rubric, anchors, and manifest from a single prompt
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_3
+  /autopilot/apply:
+    post:
+      operationId: AutopilotController_applyBlueprint
+      summary: Apply a synthesized hackathon blueprint directly into MongoDB cluster
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_3
+  /api/v1/auth/register:
+    post:
+      operationId: AuthController_register
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/auth/login:
+    post:
+      operationId: AuthController_login
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/auth/google:
+    post:
+      operationId: AuthController_googleLogin
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/auth/logout:
+    post:
+      operationId: AuthController_logout
+      parameters:
+        - name: authorization
+          required: true
+          in: header
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/auth/me:
+    get:
+      operationId: AuthController_me
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  /api/v1/events:
+    get:
+      operationId: EventsController_listEvents
+      parameters: []
+      responses:
+        '200':
+          description: ''
+    post:
+      operationId: EventsController_createEvent
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{id}:
+    get:
+      operationId: EventsController_getEvent
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{id}/status:
+    post:
+      operationId: EventsController_updateStatus
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{id}/autopilot:
+    post:
+      operationId: EventsController_setAutopilotMode
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{id}/clone:
+    post:
+      operationId: EventsController_cloneEvent
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{id}/command-center:
+    get:
+      operationId: EventsController_getCommandCenter
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{id}/audience/csv:
+    get:
+      operationId: EventsController_getAudienceCsv
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{id}/audience/broadcast:
+    post:
+      operationId: EventsController_broadcastToAudience
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/teams:
+    post:
+      operationId: TeamsController_createTeam
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/teams/join:
+    post:
+      operationId: TeamsController_joinTeam
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/teams/{id}:
+    get:
+      operationId: TeamsController_getTeam
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/teams/event/{eventId}/me:
+    get:
+      operationId: TeamsController_getMyTeam
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/submissions:
+    post:
+      operationId: SubmissionsController_saveDraft
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/submissions/{id}/freeze:
+    post:
+      operationId: SubmissionsController_freezeSubmission
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/submissions/{id}:
+    get:
+      operationId: SubmissionsController_getProject
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/submissions/event/{eventId}/gallery:
+    get:
+      operationId: SubmissionsController_getGallery
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: trackId
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: search
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/submissions/{id}/health-check:
+    get:
+      operationId: SubmissionsController_getHealthCheck
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/judging/rubric:
+    get:
+      operationId: JudgingController_getRubric
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/judging/rubric/lock:
+    post:
+      operationId: JudgingController_lockRubric
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{eventId}/judging/anchors:
+    get:
+      operationId: JudgingController_getAnchors
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/judging/calibration:
+    post:
+      operationId: JudgingController_recordCalibration
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{eventId}/judging/assignments/me:
+    get:
+      operationId: JudgingController_getMyAssignments
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/judging/ballots:
+    post:
+      operationId: JudgingController_submitBallot
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{eventId}/judging/assignments/generate:
+    post:
+      operationId: JudgingController_generateAssignments
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{eventId}/judging/recuse:
+    post:
+      operationId: JudgingController_recuseAssignment
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{eventId}/judging/projects/{projectId}/peer-ballots:
+    get:
+      operationId: JudgingController_getPeerBallots
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: projectId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/judging/pairwise:
+    post:
+      operationId: JudgingController_recordPairwise
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+    get:
+      operationId: JudgingController_getPairwiseComparisons
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/judging/pairwise/queue:
+    get:
+      operationId: JudgingController_getPairwiseQueue
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/ranking/preview:
+    get:
+      operationId: RankingController_previewRankings
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/ranking/simulate-weights:
+    post:
+      operationId: RankingController_simulateWeights
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{eventId}/ranking/disagreement/trigger:
+    post:
+      operationId: RankingController_triggerDisagreementReviews
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{eventId}/ranking/publish:
+    post:
+      operationId: RankingController_publishResults
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{eventId}/ranking/published:
+    get:
+      operationId: RankingController_getPublishedResults
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/ranking/pairwise:
+    get:
+      operationId: RankingController_getPairwiseRankings
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/ranking/normalization-proof:
+    get:
+      operationId: RankingController_getNormalizationProof
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/ranking/{runId}/sign-off:
+    post:
+      operationId: RankingController_signOff
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: runId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{eventId}/ranking/projects/{projectId}/feedback:
+    get:
+      operationId: RankingController_getEntrantFeedback
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: projectId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/idea-reports:
+    post:
+      operationId: IntelligenceController_createReport
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/events/{eventId}/idea-reports/{id}:
+    get:
+      operationId: IntelligenceController_getReport
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+    delete:
+      operationId: IntelligenceController_deleteReport
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/trust/verify/{eventId}:
+    get:
+      operationId: TrustController_verifyChain
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/trust/simulate-tamper:
+    post:
+      operationId: TrustController_simulateTamper
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/trust/events/{eventId}/audit-trail:
+    get:
+      operationId: TrustController_getAuditTrail
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/trust/events/{eventId}/export:
+    get:
+      operationId: TrustController_getExport
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/support:
+    post:
+      operationId: SupportController_submitTicket
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+    get:
+      operationId: SupportController_getOrganizerSupportInbox
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: priority
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/support/mine:
+    get:
+      operationId: SupportController_getMyTickets
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/support/{id}:
+    patch:
+      operationId: SupportController_updateTicket
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{eventId}/chat:
+    get:
+      operationId: ChatController_getMessages
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: projectId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+    post:
+      operationId: ChatController_postMessage
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+info:
+  title: DOGFOOD OS API
+  description: Self-hosted, offline-first operating system for fair judged events
+  version: 1.0.0
+  contact: {}
+tags: []
+servers: []
+components:
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+  schemas: {}

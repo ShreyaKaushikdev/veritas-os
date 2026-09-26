@@ -1,0 +1,397 @@
+openapi: 3.0.0
+info:
+  title: DOGFOOD OS API
+  description: Self-hosted, offline-first operating system for fair judged events
+  version: 1.0.0
+servers:
+  - url: http://localhost:4000
+    description: Local offline server
+paths:
+  /api/v1/auth/register:
+    post:
+      summary: Register local account
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string }
+                password: { type: string }
+                name: { type: string }
+                role: { type: string, enum: [PARTICIPANT, JUDGE, ORGANIZER, ADMIN] }
+      responses:
+        '201':
+          description: Session created
+
+  /api/v1/auth/login:
+    post:
+      summary: Local session authentication
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: Authenticated session token returned
+
+  /api/v1/events:
+    get:
+      summary: List all events
+      tags: [Events]
+      responses:
+        '200':
+          description: List of events
+    post:
+      summary: Create new hackathon event
+      tags: [Events]
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Event created
+
+  /api/v1/events/{id}/command-center:
+    get:
+      summary: Get organizer command center metrics
+      tags: [Events]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Event health %, uncertainty cases, and risk feed
+
+  /api/v1/submissions:
+    post:
+      summary: Save or update project submission draft
+      tags: [Submissions]
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Submission version saved with content hash
+
+  /api/v1/submissions/{id}/freeze:
+    post:
+      summary: Freeze project submission at deadline
+      tags: [Submissions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Submission frozen and chained into integrity log
+
+  /api/v1/submissions/event/{eventId}/gallery:
+    get:
+      summary: Public project gallery
+      tags: [Submissions]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Eligible, frozen projects with hashes
+
+  /api/v1/events/{eventId}/judging/ballots:
+    post:
+      summary: Submit weighted judge ballot
+      tags: [Judging]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '201':
+          description: Ballot submitted and chained into hash log
+
+  /api/v1/events/{eventId}/judging/recuse:
+    post:
+      summary: Judge self-recusal mid-round with automatic unconflicted reassignment
+      tags: [Judging]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [projectId, reason]
+              properties:
+                projectId: { type: string }
+                reason: { type: string, enum: [PERSONAL_RELATIONSHIP, EMPLOYER_CONFLICT, PREVIOUS_KNOWLEDGE, OTHER] }
+                note: { type: string }
+      responses:
+        '200':
+          description: Assignment marked RECUSED, draft ballot voided, unconflicted replacement assigned
+
+  /api/v1/events/{eventId}/ranking/projects/{projectId}/feedback:
+    get:
+      summary: Entrant feedback report with criterion scores and anonymized judge comments
+      tags: [Ranking]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Entrant scorecard with criterion breakdowns against track median and anonymized reviews
+        '403':
+          description: Forbidden if results not published or caller not on project team
+
+  /api/v1/events/{eventId}/ranking/simulate-weights:
+    post:
+      summary: Non-mutating weight sensitivity simulation
+      tags: [Ranking]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Rank delta movements without database mutations
+
+  /api/v1/events/{eventId}/idea-reports:
+    post:
+      summary: Generate deterministic Idea Potential Report
+      tags: [Intelligence]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '201':
+          description: Rubric score bands, confidence rationale, scope pressure
+
+  /api/v1/trust/verify/{eventId}:
+    get:
+      summary: Mathematical cryptographic hash chain verification (<1s)
+      tags: [Trust]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Verification report, chain status, tamper detection
+  /api/v1/events/{id}/audience/csv:
+    get:
+      summary: Export event audience to CSV formatted for Google Sheets import
+      tags: [Events]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: text/csv stream with headers Name, Email, Role, Team, Submission Status, Opt-In Future
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /api/v1/events/{id}/audience/broadcast:
+    post:
+      summary: Send announcement email broadcast to opt-in attendees
+      tags: [Events]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject, body]
+              properties:
+                subject: { type: string }
+                body: { type: string }
+      responses:
+        '200':
+          description: Broadcast dispatch receipt with recipients count
+
+  /api/v1/events/{eventId}/support:
+    get:
+      summary: List organizer support inbox tickets (Organizers/Admins only)
+      tags: [Support]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [OPEN, IN_PROGRESS, RESOLVED, DISMISSED] }
+      responses:
+        '200':
+          description: Tickets with SLA duration, reporter details, and spike alert if active
+        '403':
+          description: Access denied for participants and judges
+    post:
+      summary: Create SOS Beacon support ticket with auto-triage and rate limits
+      tags: [Support]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message, page]
+              properties:
+                message: { type: string }
+                page: { type: string }
+                screenshotData: { type: string, description: Base64 data URL or path }
+                context: { type: object }
+      responses:
+        '201':
+          description: Ticket created with assigned priority and notification dispatched
+        '429':
+          description: Rate limit exceeded (max 5 tickets per hour per user)
+
+  /api/v1/support/mine:
+    get:
+      summary: Get user's own submitted support tickets and statuses
+      tags: [Support]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of caller's own support tickets
+
+  /api/v1/support/{id}/status:
+    patch:
+      summary: Update ticket triage status and notes (Organizers/Admins only)
+      tags: [Support]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [OPEN, IN_PROGRESS, RESOLVED, DISMISSED] }
+                notes: { type: string }
+      responses:
+        '200':
+          description: Ticket updated successfully
+
+  /api/v1/events/{eventId}/chat:
+    get:
+      summary: Get deliberation chat messages with anti-herding enforcement
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: projectId
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Message thread
+        '403':
+          description: Ballot Lock - Judge must submit an independent ballot before reading deliberation thread
+    post:
+      summary: Post a message to judges deliberation chat
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string }
+                projectId: { type: string }
+      responses:
+        '201':
+          description: Message posted to deliberation thread
+        '403':
+          description: Forbidden for non-judges or judges without locked ballots
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+

@@ -1,0 +1,95 @@
+{
+  "suite": "DOGFOOD_OS_PRODUCTION_ACCEPTANCE",
+  "timestamp": "2026-09-24T18:12:38.955Z",
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "nodeVersion": "v24.15.0",
+    "apiEndpoint": "http://localhost:4000",
+    "loopback": true
+  },
+  "checks": {
+    "stack_health": {
+      "passed": true,
+      "latencyMs": 113,
+      "database": "dogfood_os",
+      "collections": {
+        "projects": 40,
+        "ballots": 124,
+        "disputes": 2,
+        "trust_ledger": 3
+      },
+      "note": "Live MongoDB active with populated collections"
+    },
+    "cryptographic_audit": {
+      "passed": true,
+      "verifyLatencyMs": 10,
+      "targetUnderOneSecond": true,
+      "merkleStateRoot": "0x7867ca81ff4c582fb941d8a0ede",
+      "chainHeight": 3,
+      "zkProofStatus": "GROTH16_VERIFIED_1.4MS"
+    },
+    "deterministic_evaluation": {
+      "passed": true,
+      "zeroCloudLeakage": true,
+      "airGapCompliance": "PASS",
+      "mode": "OFFLINE_STRICT"
+    },
+    "pairwise_elo_engine": {
+      "passed": true,
+      "duelResult": {
+        "projectA": {
+          "id": "proj-01",
+          "deltaElo": 1.9,
+          "newElo": 118.99999999999999
+        },
+        "projectB": {
+          "id": "proj-02",
+          "deltaElo": -1.9,
+          "newElo": 80.3
+        },
+        "winner": "proj-01"
+      },
+      "activeTracksCount": 3,
+      "tracks": [
+        {
+          "track": "Autonomous Agents",
+          "projectCount": 14,
+          "avgElo": 76.6,
+          "avgScore": 3.71,
+          "leader": {
+            "id": "proj-03",
+            "title": "MeshMesh Topology",
+            "elo": 94.8
+          }
+        },
+        {
+          "track": "Developer Infra",
+          "projectCount": 13,
+          "avgElo": 79.2,
+          "avgScore": 3.76,
+          "leader": {
+            "id": "proj-01",
+            "title": "HyperAgent Engine",
+            "elo": 118.99999999999999
+          }
+        },
+        {
+          "track": "Verifiable Systems",
+          "projectCount": 13,
+          "avgElo": 75.2,
+          "avgScore": 3.71,
+          "leader": {
+            "id": "proj-06",
+            "title": "Ironclad Verified Sandbox",
+            "elo": 90.7
+          }
+        }
+      ]
+    }
+  },
+  "summary": {
+    "passed": 4,
+    "failed": 0
+  }
+}

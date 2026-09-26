@@ -1,0 +1,45 @@
+{
+  "suite": "DOGFOOD_OS_PRODUCTION_ACCEPTANCE",
+  "timestamp": "2026-09-24T17:45:42.583Z",
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "nodeVersion": "v24.15.0",
+    "apiEndpoint": "http://localhost:4000",
+    "loopback": true
+  },
+  "checks": {
+    "stack_health": {
+      "passed": true,
+      "latencyMs": 482,
+      "database": "dogfood_os",
+      "collections": {
+        "projects": 40,
+        "ballots": 121,
+        "disputes": 2,
+        "trust_ledger": 3
+      },
+      "note": "Live MongoDB active with populated collections"
+    },
+    "cryptographic_audit": {
+      "passed": true,
+      "verifyLatencyMs": 115,
+      "targetUnderOneSecond": true,
+      "merkleStateRoot": "0x7867ca81ff4c582fb941d8a0ede",
+      "chainHeight": 3,
+      "zkProofStatus": "GROTH16_VERIFIED_1.4MS"
+    },
+    "deterministic_evaluation": {
+      "passed": false,
+      "error": "Non-deterministic scoring anomaly"
+    },
+    "pairwise_elo_engine": {
+      "passed": false,
+      "error": "Pairwise Elo mutation failed"
+    }
+  },
+  "summary": {
+    "passed": 2,
+    "failed": 2
+  }
+}
