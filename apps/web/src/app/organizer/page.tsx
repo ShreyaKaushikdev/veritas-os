@@ -601,7 +601,7 @@ export default function OrganizerPage() {
 
                   <div className="flex flex-wrap items-center gap-3 pt-2 text-[10px] text-gray-400">
                     <span>Sent to: <strong className="text-brand-teal">{ticket.page}</strong></span>
-                    <span>Round: <strong className="text-gray-200">{ticket.eventPhase}</strong></span>
+                    <span>Round: <strong className="text-gray-200">{ticket.eventRound}</strong></span>
                     <span>UA: <span className="text-gray-500 truncate max-w-xs">{ticket.userAgent}</span></span>
                     {ticket.hasScreenshot && (
                       <span className="text-brand-cyan flex items-center space-x-1">

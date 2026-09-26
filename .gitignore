@@ -32,3 +32,4 @@ Thumbs.db
 .turbo
 .parcel-cache
 .cache
+*.tsbuildinfo
