@@ -66,6 +66,23 @@ export class DatabaseController {
 export class JudgingMongoController {
   constructor(private readonly mongoService: MongoService) {}
 
+  @Get('ballots')
+  @ApiOperation({ summary: 'Fetch all judge ballots from MongoDB' })
+  async getBallots(@Query('projectId') projectId?: string, @Query('judgeId') judgeId?: string) {
+    const db = this.mongoService.getDb();
+    if (!db) throw new NotFoundException('MongoDB not connected');
+
+    const query: any = {};
+    if (projectId) query.projectId = projectId;
+    if (judgeId) query.judgeId = judgeId;
+
+    const ballots = await db.collection('ballots').find(query).toArray();
+    return {
+      count: ballots.length,
+      data: ballots,
+    };
+  }
+
   @Post('ballots')
   @ApiOperation({ summary: 'Record a live signed judge ballot into MongoDB with cryptographic receipt' })
   async submitLiveBallot(@Body() body: any) {

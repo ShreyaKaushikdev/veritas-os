@@ -120,6 +120,25 @@ paths:
           description: ''
       tags: *ref_1
   /judging/ballots:
+    get:
+      operationId: JudgingMongoController_getBallots
+      summary: Fetch all judge ballots from MongoDB
+      parameters:
+        - name: projectId
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: judgeId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &ref_2
+        - Live Judging & Ballots
     post:
       operationId: JudgingMongoController_submitLiveBallot
       summary: >-
@@ -129,8 +148,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags:
-        - Live Judging & Ballots
+      tags: *ref_2
   /trust/ledger:
     get:
       operationId: TrustMongoController_getLedger
@@ -139,7 +157,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &ref_2
+      tags: &ref_3
         - Trust & Ledger (MongoDB)
   /trust/commit:
     post:
@@ -149,7 +167,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: *ref_2
+      tags: *ref_3
   /trust/verify/{receiptId}:
     get:
       operationId: TrustMongoController_verifyReceipt
@@ -164,7 +182,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *ref_2
+      tags: *ref_3
   /autopilot/presets:
     get:
       operationId: AutopilotController_getPresets
@@ -173,7 +191,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &ref_3
+      tags: &ref_4
         - Autonomous Hackathon Orchestrator
   /autopilot/synthesize:
     post:
@@ -185,7 +203,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: *ref_3
+      tags: *ref_4
   /autopilot/apply:
     post:
       operationId: AutopilotController_applyBlueprint
@@ -194,7 +212,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: *ref_3
+      tags: *ref_4
   /gallery:
     get:
       operationId: DogfoodController_getGallery
@@ -203,7 +221,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &ref_4
+      tags: &ref_5
         - Dogfood Acceptance
   /submit:
     post:
@@ -213,7 +231,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: *ref_4
+      tags: *ref_5
   /judge/scores:
     get:
       operationId: DogfoodController_getMyScores
@@ -227,7 +245,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *ref_4
+      tags: *ref_5
   /judge/scores/{judgeId}:
     get:
       operationId: DogfoodController_getPeerScores
@@ -246,7 +264,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *ref_4
+      tags: *ref_5
   /export/csv:
     get:
       operationId: DogfoodController_exportCsv
@@ -260,7 +278,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *ref_4
+      tags: *ref_5
   /api/v1/auth/register:
     post:
       operationId: AuthController_register
