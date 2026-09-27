@@ -112,7 +112,7 @@ export default function HomePage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span className="font-bold text-emerald-700">DOGFOOD OS v1.0</span>
+            <span className="font-bold text-emerald-700">● DOGFOOD OS v1.0</span>
             <span className="text-slate-300">•</span>
             <span className="text-slate-600 group-hover:text-slate-900 transition-colors font-medium">
               Run a hackathon without arguing about scores
@@ -120,45 +120,71 @@ export default function HomePage() {
             <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-transform" />
           </Link>
 
-          {/* Hero Headline with Natural Forest Emerald & Cyan Gradient */}
+          {/* Hero Headline with Stitch Calligraphic Underline */}
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-900 max-w-5xl mb-6 leading-[1.12]">
             Run a fair hackathon at{' '}
-            <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent font-black drop-shadow-2xs">
+            <span className="relative inline-block text-emerald-600">
               any size
+              <svg className="absolute -bottom-2.5 left-0 w-full h-3 text-emerald-400/70" fill="none" preserveAspectRatio="none" viewBox="0 0 160 12">
+                <path d="M2 9.5C40 2.5 120 2.5 158 9.5" stroke="currentColor" strokeLinecap="round" strokeWidth="4"></path>
+              </svg>
             </span>
           </h1>
 
           {/* High Contrast Body Paragraph */}
-          <p className="text-base sm:text-lg text-slate-600 max-w-2xl mb-8 leading-relaxed font-normal">
+          <p className="text-base sm:text-lg text-slate-600 max-w-2xl mb-10 leading-relaxed font-normal">
             Judges score on the same scale, teams get honest feedback while they build, and every score
             is locked so it cannot be changed later. Works with or without internet.
           </p>
 
-          {/* Live System Capability Badges */}
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-10 text-xs font-mono text-slate-600">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50/90 border border-emerald-200 text-emerald-800 font-semibold shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Scores agree within 50ms</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-700 font-medium">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Scores cannot be changed</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-700 font-medium">
-              <Zap className="w-3.5 h-3.5 text-teal-600" />
-              <span>Works with no internet</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-700 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
-              <span>Ready in minutes</span>
-            </span>
+          {/* Stitch Redesigned: 4 Elevated Trust Guarantee Micro-Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-4xl w-full mb-10 text-left">
+            <div className="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-xs hover:border-emerald-300 hover:shadow-sm transition-all group">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 group-hover:scale-105 transition-transform">
+                <Zap className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xs font-mono font-bold text-slate-900">Within 50ms</p>
+                <p className="text-[11px] text-slate-500">Scores agree</p>
+              </div>
+            </div>
+
+            <div className="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-xs hover:border-emerald-300 hover:shadow-sm transition-all group">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 group-hover:scale-105 transition-transform">
+                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xs font-mono font-bold text-slate-900">Merkle Chain</p>
+                <p className="text-[11px] text-slate-500">Immutable records</p>
+              </div>
+            </div>
+
+            <div className="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-xs hover:border-emerald-300 hover:shadow-sm transition-all group">
+              <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shrink-0 group-hover:scale-105 transition-transform">
+                <Activity className="w-5 h-5 text-teal-600" />
+              </div>
+              <div>
+                <p className="text-xs font-mono font-bold text-slate-900">Offline Air-Gap</p>
+                <p className="text-[11px] text-slate-500">Zero dropouts</p>
+              </div>
+            </div>
+
+            <div className="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-xs hover:border-emerald-300 hover:shadow-sm transition-all group">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 group-hover:scale-105 transition-transform">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xs font-mono font-bold text-slate-900">90 seconds</p>
+                <p className="text-[11px] text-slate-500">Ready to deploy</p>
+              </div>
+            </div>
           </div>
 
-          {/* Action CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full max-w-md mb-16">
+          {/* Stitch Redesigned: Aligned Action Dock with Support Status */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full max-w-2xl mb-14">
             <Link
               href="/dashboard"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
             >
               <span>Open the organizer dashboard</span>
               <ArrowRight className="w-4 h-4 text-white" />
@@ -166,7 +192,7 @@ export default function HomePage() {
 
             <Link
               href="/judge"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 font-semibold text-sm border border-slate-200 shadow-2xs hover:border-emerald-300 hover:scale-105 active:scale-95 transition-all group cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-semibold text-sm border border-slate-200/90 shadow-2xs hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] transition-all group cursor-pointer"
             >
               <Play className="w-4 h-4 text-emerald-600 fill-emerald-600 group-hover:scale-110 transition-transform" />
               <span>Try scoring a project</span>
@@ -174,6 +200,15 @@ export default function HomePage() {
                 ⌘K
               </span>
             </Link>
+
+            {/* Seamless Support Beacon */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-2xs text-xs font-mono">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-slate-600">Ask for help</span>
+              <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px] border border-emerald-200">
+                Online
+              </span>
+            </div>
           </div>
 
           {/* Trust Bar & Recognized Venues */}
