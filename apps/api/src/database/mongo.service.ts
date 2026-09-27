@@ -10,6 +10,7 @@ export class MongoService implements OnModuleInit, OnModuleDestroy {
 
   private readonly uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
   private readonly dbName = process.env.MONGODB_DB_NAME || 'dogfood_os';
+  private activeUri = '';
 
   async onModuleInit() {
     await this.connect();
@@ -32,9 +33,27 @@ export class MongoService implements OnModuleInit, OnModuleDestroy {
       await this.client.connect();
       this.db = this.client.db(this.dbName);
       this.isConnected = true;
+      this.activeUri = this.uri;
       this.logger.log(`Successfully connected to MongoDB at ${this.uri}, database: ${this.dbName}`);
     } catch (error) {
       this.logger.error(`Failed to connect to MongoDB at ${this.uri}: ${(error as Error).message}`);
+      if (this.uri !== 'mongodb://127.0.0.1:27017') {
+        this.logger.warn(`Attempting fallback to local MongoDB at mongodb://127.0.0.1:27017...`);
+        try {
+          this.client = new MongoClient('mongodb://127.0.0.1:27017', {
+            serverSelectionTimeoutMS: 3000,
+            connectTimeoutMS: 3000,
+          });
+          await this.client.connect();
+          this.db = this.client.db(this.dbName);
+          this.isConnected = true;
+          this.activeUri = 'mongodb://127.0.0.1:27017';
+          this.logger.log(`Fallback connection established to local MongoDB.`);
+          return;
+        } catch (localErr) {
+          this.logger.error(`Fallback connection also failed: ${(localErr as Error).message}`);
+        }
+      }
       this.isConnected = false;
     }
   }
@@ -54,7 +73,7 @@ export class MongoService implements OnModuleInit, OnModuleDestroy {
     return {
       connected: this.isConnected,
       database: this.dbName,
-      uri: this.uri,
+      uri: this.activeUri || this.uri,
     };
   }
 
