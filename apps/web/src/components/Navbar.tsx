@@ -73,14 +73,23 @@ export default function Navbar() {
     return () => clearInterval(interval);
   }, []);
 
-  const navLinks = [
-    { href: '/', label: 'Overview' },
-    { href: '/story', label: 'Story' },
-    { href: '/gallery', label: 'Ballots', count: liveBallots },
-    { href: '/participant', label: 'Idea Coach' },
-    { href: '/judge', label: 'Judge (J/K)' },
-    { href: '/verify', label: 'Trust Ledger' },
-  ];
+  // Role-based navigation links with access control
+  const getAllNavLinks = () => {
+    const allLinks = [
+      { href: '/', label: 'Overview', roles: ['VISITOR', 'PARTICIPANT', 'JUDGE', 'ORGANIZER', 'ADMIN'] },
+      { href: '/story', label: 'Story', roles: ['VISITOR', 'PARTICIPANT', 'JUDGE', 'ORGANIZER', 'ADMIN'] },
+      { href: '/gallery', label: 'Ballots', count: liveBallots, roles: ['JUDGE', 'ORGANIZER', 'ADMIN'] },
+      { href: '/participant', label: 'Idea Coach', roles: ['PARTICIPANT', 'ORGANIZER', 'ADMIN'] },
+      { href: '/judge', label: 'Judge (J/K)', roles: ['JUDGE', 'ORGANIZER', 'ADMIN'] },
+      { href: '/organizer', label: 'Organizer', roles: ['ORGANIZER', 'ADMIN'] },
+    ];
+
+    // Filter links based on current user's role
+    const userRole = currentUser?.role || 'VISITOR';
+    return allLinks.filter(link => link.roles.includes(userRole));
+  };
+
+  const navLinks = getAllNavLinks();
 
   return (
     <>
