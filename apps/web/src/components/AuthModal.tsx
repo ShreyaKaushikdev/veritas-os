@@ -129,43 +129,43 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="glass-card max-w-md w-full p-6 sm:p-8 rounded-2xl border border-white/10 shadow-2xl relative space-y-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md animate-fade-in">
+      <div className="bg-white/95 backdrop-blur-2xl max-w-md w-full p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-[0_24px_64px_rgba(15,23,42,0.12)] relative space-y-6">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+          className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
         {/* Header */}
-        <div className="space-y-1">
-          <div className="flex items-center space-x-2 text-xs font-mono text-brand-teal">
-            <ShieldCheck className="w-4 h-4" />
-            <span>SIGN IN</span>
+        <div className="space-y-1.5">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>SECURE SIGN IN</span>
           </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight font-sans">
             {mode === 'LOGIN' ? 'Sign In to Dogfood OS' : 'Create an Account'}
           </h2>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-slate-500 leading-relaxed">
             Hosted & offline-compatible authentication with cryptographic role isolation.
           </p>
         </div>
 
         {error && (
-          <div className="p-3 rounded-lg bg-brand-rose/10 border border-brand-rose/30 text-brand-rose text-xs font-mono flex items-center space-x-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-mono flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Google Sign In Button */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-gray-100 text-gray-900 font-medium text-xs flex items-center justify-center space-x-3 transition-all shadow-md"
+            className="w-full py-2.5 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 font-semibold text-xs flex items-center justify-center space-x-3 transition-all shadow-xs cursor-pointer active:scale-[0.99]"
           >
             {/* Google SVG Logo */}
             <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -186,71 +186,73 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
               />
             </svg>
-            <span className="font-semibold">Continue with Google</span>
+            <span>Continue with Google</span>
           </button>
 
           <div className="relative flex items-center justify-center">
-            <div className="border-t border-white/10 w-full" />
-            <span className="bg-dark-900 px-2 text-[10px] font-mono text-gray-500 uppercase">Or use your email</span>
+            <div className="border-t border-slate-200 w-full" />
+            <span className="bg-white px-3 text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider absolute">
+              Or use your email
+            </span>
           </div>
         </div>
 
         {/* Email & Password Form */}
-        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs pt-1">
           {mode === 'REGISTER' && (
             <div>
-              <label className="block text-gray-400 font-mono mb-1">Your name</label>
+              <label className="block text-slate-700 font-medium mb-1 font-sans">Your name</label>
               <div className="relative">
-                <User className="w-4 h-4 absolute left-3 top-2.5 text-gray-500" />
+                <User className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Alex Rivera"
-                  className="w-full pl-9 pr-3 py-2 bg-dark-900 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-brand-teal"
+                  className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 />
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-gray-400 font-mono mb-1">Email</label>
+            <label className="block text-slate-700 font-medium mb-1 font-sans">Email</label>
             <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3 top-2.5 text-gray-500" />
+              <Mail className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="w-full pl-9 pr-3 py-2 bg-dark-900 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-brand-teal"
+                className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-gray-400 font-mono mb-1">Password</label>
+            <label className="block text-slate-700 font-medium mb-1 font-sans">Password</label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3 top-2.5 text-gray-500" />
+              <Lock className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full pl-9 pr-3 py-2 bg-dark-900 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-brand-teal"
+                className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
               />
             </div>
           </div>
 
           {mode === 'REGISTER' && (
             <div>
-              <label className="block text-gray-400 font-mono mb-1">Role</label>
+              <label className="block text-slate-700 font-medium mb-1 font-sans">Role</label>
               <select
                 value={role}
                 onChange={(e: any) => setRole(e.target.value)}
-                className="w-full px-3 py-2 bg-dark-900 border border-white/10 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-brand-teal"
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
               >
                 <option value="PARTICIPANT">Participant (Submit & Ideate)</option>
                 <option value="JUDGE">Judge (Rubrics & Pairwise Duels)</option>
@@ -262,7 +264,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-brand-teal to-brand-emerald text-dark-950 font-bold text-xs font-mono hover:opacity-95 transition-opacity flex items-center justify-center space-x-2 shadow-lg shadow-brand-teal/10 mt-2"
+            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs font-mono transition-all flex items-center justify-center space-x-2 shadow-lg shadow-emerald-600/20 active:scale-[0.99] cursor-pointer mt-2"
           >
             <span>{mode === 'LOGIN' ? 'Sign In with Password' : 'Create Account'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -270,18 +272,18 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
         </form>
 
         {/* Toggle Mode */}
-        <div className="text-center text-xs text-gray-400">
+        <div className="text-center text-xs text-slate-500">
           {mode === 'LOGIN' ? (
             <span>
               Don&apos;t have an account?{' '}
-              <button onClick={() => setMode('REGISTER')} className="text-brand-teal hover:underline font-semibold">
+              <button onClick={() => setMode('REGISTER')} className="text-emerald-700 hover:text-emerald-800 hover:underline font-semibold cursor-pointer">
                 Register
               </button>
             </span>
           ) : (
             <span>
               Already registered?{' '}
-              <button onClick={() => setMode('LOGIN')} className="text-brand-teal hover:underline font-semibold">
+              <button onClick={() => setMode('LOGIN')} className="text-emerald-700 hover:text-emerald-800 hover:underline font-semibold cursor-pointer">
                 Sign In
               </button>
             </span>
@@ -289,33 +291,36 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
         </div>
 
         {/* Quick Demo Persona Switcher */}
-        <div className="pt-3 border-t border-white/5 space-y-2">
-          <span className="text-[10px] font-mono uppercase text-gray-500 block">Try a demo account (one click):</span>
+        <div className="pt-3 border-t border-slate-100 space-y-2">
+          <span className="text-[10px] font-mono uppercase font-semibold text-slate-400 block tracking-wider">
+            Try a demo account (one click):
+          </span>
           <div className="grid grid-cols-3 gap-2 text-[10px] font-mono">
             <button
               onClick={() => handleSelectDemoPersona('sarah.lin@example.com', 'Judge Dr. Sarah Lin #2', 'JUDGE')}
-              className="p-2 rounded bg-dark-900 hover:bg-dark-850 border border-brand-violet/30 text-brand-violet text-left"
+              className="p-2.5 rounded-xl bg-purple-50/80 hover:bg-purple-100/90 border border-purple-200/80 text-purple-900 text-left transition-all cursor-pointer shadow-2xs group"
             >
-              <div className="font-bold">Sarah, judge</div>
-              <div className="text-gray-500">What are you here to do?</div>
+              <div className="font-bold text-purple-950 group-hover:text-purple-700 transition-colors">Sarah, judge</div>
+              <div className="text-purple-600/80 text-[9px] truncate">Expert Evaluator</div>
             </button>
             <button
               onClick={() => handleSelectDemoPersona('elena@dogfood.os', 'Dr. Elena Rostova', 'ORGANIZER')}
-              className="p-2 rounded bg-dark-900 hover:bg-dark-850 border border-brand-emerald/30 text-brand-emerald text-left"
+              className="p-2.5 rounded-xl bg-emerald-50/80 hover:bg-emerald-100/90 border border-emerald-200/80 text-emerald-900 text-left transition-all cursor-pointer shadow-2xs group"
             >
-              <div className="font-bold">Elena, organizer</div>
-              <div className="text-gray-500">Organizer</div>
+              <div className="font-bold text-emerald-950 group-hover:text-emerald-700 transition-colors">Elena, org</div>
+              <div className="text-emerald-600/80 text-[9px] truncate">Lead Organizer</div>
             </button>
             <button
               onClick={() => handleSelectDemoPersona('alice@dogfood.os', 'Alice Walker', 'PARTICIPANT')}
-              className="p-2 rounded bg-dark-900 hover:bg-dark-850 border border-brand-teal/30 text-brand-teal text-left"
+              className="p-2.5 rounded-xl bg-teal-50/80 hover:bg-teal-100/90 border border-teal-200/80 text-teal-900 text-left transition-all cursor-pointer shadow-2xs group"
             >
-              <div className="font-bold">Participant</div>
-              <div className="text-gray-500">Builder</div>
+              <div className="font-bold text-teal-950 group-hover:text-teal-700 transition-colors">Alice, builder</div>
+              <div className="text-teal-600/80 text-[9px] truncate">Hacker / Dev</div>
             </button>
           </div>
         </div>
       </div>
     </div>
   );
+
 }
