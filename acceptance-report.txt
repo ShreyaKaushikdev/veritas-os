@@ -1,38 +1,14 @@
-================================================================================
-DOGFOOD OS — FORMAL ACCEPTANCE & BENCHMARK REPORT
-Generated: 2026-09-26T19:04:08.810Z
-Target: Hackathon MVP / Release v1.0
-Overall Status: VERIFIED GREEN (PASS)
-Total Test Duration: 0.28s
-================================================================================
+DOGFOOD 2026 acceptance report
+portal: http://localhost:4000
+claimed: T1 T2
+fixtures: fixtures.json
 
-EXECUTIVE RECEIPT SUMMARY:
-[PASS] B1: Cold Start & Seed Baseline           -> Seeded database verified: 40 projects, 30 judges, 120 ballots, 164 hash nodes in 0.15s (< 90s target)
-[PASS] B2: Backend Role Isolation Matrix        -> 100% role isolation verified: 4/4 unauthorized actions rejected with HTTP 403 Forbidden
-[PASS] B3: Cryptographic Tamper Detection       -> Verified 164 chained hash nodes in 16ms. Tampering detected mathematically in < 1s.
-[PASS] B4: Disagreement Uncertainty Routing     -> Identified 1 high-dispersion disagreement cases (σ >= 1.5). Adaptive policy successfully routes 4th review.
-[PASS] B5: Weight Sensitivity Non-Mutation      -> Sandbox simulation executed without mutating database state (1 runs preserved). Rank delta computation verified.
-[PASS] B6: Offline Air-Gap Guarantee            -> Zero external cloud dependencies verified: AI_PROVIDER=off uses deterministic rubric alignment, scope pressure, and blindspot heuristics.
-[PASS] B7: SOS Beacon, Anti-Herding & Privacy   -> Auto-triage keyword priority verified (URGENT/HIGH/NORMAL), anti-herding lock guarded, 0 opt-in recipients isolated (73 non-opt-in strictly excluded from broadcasts).
-[PASS] B8: Recusal, Feedback & Tie-Breaks       -> Judge self-recusal flow guarded, entrant feedback anonymization verified (100% PII scrubbed), 3-tier deterministic tie-break cascade verified (Rubric Priority -> Consensus -> Earliest Freeze).
-[PASS] B9: Spike Load & Pairwise Normalization Proof -> Spike-hardening verified: p95 snapshot latency = 2ms (< 500ms target, avg 0.8ms across concurrent reads); Pairwise Bradley-Terry Elo (+10 pts) chained; Normalization proof theorem verified; Multi-sig organizer sign-offs logged.
+T1  gallery is public ................. PASS
+T1  project from fixtures shown ....... PASS
+T1  closed event refuses submissions .. PASS
+T2  judge sees own scores ............. PASS
+T2  judge cannot see peer scores ...... PASS
+T2  participant blocked ............... PASS
+T2  csv export works .................. PASS
 
-TIER CLAIMS VERIFICATION:
-  ✓ Tier 1 (P0 Foundation): PASS (Local auth, roles, event lifecycle, team invite, deadline freeze, gallery)
-  ✓ Tier 2 (P0 Judging):    PASS (Locked rubrics, anchor calibration, conflict-safe assignment, keyboard ballots, normalized runs)
-  ✓ Signature Slice (P1):  PASS (Deterministic Idea Potential Report, Disagreement Routing, Weight Sandbox, Trust Center, 3D Moments)
-  ✓ Trust & Audit (P1):    PASS (Append-only event sourcing, SHA-256 local hash chain, /verify in <1s, export manifests)
-  ✓ Ops Automation (P1):   PASS (SOS Beacon screenshot triage, Anti-Herding deliberation lock, Opt-in broadcast & CSV export)
-  ✓ Moat Differentiators:  PASS (Judge Self-Recusal mid-round pool re-assignment, Entrant Feedback scorecards, Deterministic Tie-Break cascade)
-  ✓ Spike Hardening (B9):  PASS (Precomputed snapshots p95 < 500ms, Bradley-Terry Elo pairwise mode +10 pts, Normalization Proof, Multi-Sig sign-offs)
-
-ARCHITECTURAL CONSTRAINTS COMPLIANCE:
-  1. docker compose up -> seeded portal ready in < 90s: VERIFIED
-  2. Single source of truth: PostgreSQL 16 / Prisma: VERIFIED
-  3. Local-first session auth (Argon2/bcrypt): VERIFIED
-  4. Backend-enforced role isolation (HTTP 403): VERIFIED
-  5. Append-only event sourced audit trail: VERIFIED
-  6. Cryptographic hash chain over freeze->ballots->rankings->published: VERIFIED
-  7. Deterministic AI fallback with AI_PROVIDER=off: VERIFIED
-  8. Static precomputed reads for gallery, verify, and published results: VERIFIED
-================================================================================
+claimed T1 T2, verified T1 T2

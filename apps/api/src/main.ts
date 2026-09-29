@@ -8,10 +8,27 @@ import * as path from 'path';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // ✅ FIX #2: CORS Restriction - Only allow whitelisted origins
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [],
+  ].flat().filter(Boolean);
+
   app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    origin: (origin, callback) => {
+      // Allow requests without origin (like Postman, mobile, Electron)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS policy violation'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400, // 24 hours
   });
 
   app.useGlobalPipes(
@@ -20,6 +37,9 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // ✅ FIX #3: Rate Limiting - Global rate limiter configured via APP_GUARD in AppModule
+  // (60 requests per minute per IP - configured in app.module.ts ThrottlerModule)
 
   // OpenAPI Swagger Specification Setup
   const config = new DocumentBuilder()

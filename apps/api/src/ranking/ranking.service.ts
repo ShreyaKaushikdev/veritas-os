@@ -462,13 +462,22 @@ export class RankingService {
   }
 
   async getEntrantFeedbackReport(eventId: string, projectId: string, callerUserId: string, callerRole: string) {
+    // ✅ FIX #4: Data Isolation - Verify event exists
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId }
+    });
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    // ✅ FIX #4: Data Isolation - Verify project belongs to this event (CRITICAL - was missing)
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       include: {
         team: { include: { members: true } },
         track: true,
         ballots: {
-          where: { status: 'SUBMITTED' },
+          where: { status: 'SUBMITTED', eventId },  // Also filter ballots by eventId
           include: {
             scores: { include: { criteria: true } },
           },
@@ -476,7 +485,9 @@ export class RankingService {
       },
     });
 
-    if (!project) throw new NotFoundException('Project not found');
+    if (!project || project.eventId !== eventId) {
+      throw new ForbiddenException('Project does not belong to this event');
+    }
 
     // Access control: only team members of this project, or ORGANIZER/ADMIN
     const isTeamMember = project.team?.members.some((m) => m.userId === callerUserId);
@@ -485,7 +496,6 @@ export class RankingService {
     }
 
     // Publication status verification: Entrant feedback is only released post-publication
-    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
     const latestPublishedRun = await this.prisma.rankingRun.findFirst({
       where: { eventId, isPublished: true },
       orderBy: { createdAt: 'desc' },

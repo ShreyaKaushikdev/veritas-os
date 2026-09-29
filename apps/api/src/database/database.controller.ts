@@ -1,13 +1,20 @@
-import { Controller, Get, Post, Query, Param, Body, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Query, Param, Body, NotFoundException, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MongoService } from './mongo.service';
+import { AuthGuard } from '../common/guards/auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { Role } from '../common/types';
+import * as crypto from 'crypto';
 
 @ApiTags('Database & Telemetry')
 @Controller('database')
+@UseGuards(AuthGuard, RolesGuard)
 export class DatabaseController {
   constructor(private readonly mongoService: MongoService) {}
 
   @Get('status')
+  @Roles(Role.ADMIN, Role.ORGANIZER)
   @ApiOperation({ summary: 'Get live MongoDB connection status & collection statistics' })
   async getStatus() {
     const db = this.mongoService.getDb();
@@ -41,6 +48,7 @@ export class DatabaseController {
   }
 
   @Post('clear')
+  @Roles(Role.ADMIN, Role.ORGANIZER)
   @ApiOperation({ summary: 'Clear all mock and seeded data to run purely on live participant and judge records' })
   async clear() {
     await this.mongoService.clearDatabase();
@@ -51,6 +59,7 @@ export class DatabaseController {
   }
 
   @Post('reseed')
+  @Roles(Role.ADMIN, Role.ORGANIZER)
   @ApiOperation({ summary: 'Sandbox Only: Populate demo hackathon state' })
   async reseed() {
     await this.mongoService.seedDatabase();
@@ -63,10 +72,12 @@ export class DatabaseController {
 
 @ApiTags('Live Judging & Ballots')
 @Controller('judging')
+@UseGuards(AuthGuard, RolesGuard)
 export class JudgingMongoController {
   constructor(private readonly mongoService: MongoService) {}
 
   @Get('ballots')
+  @Roles(Role.JUDGE, Role.ORGANIZER, Role.ADMIN)
   @ApiOperation({ summary: 'Fetch all judge ballots from MongoDB' })
   async getBallots(@Query('projectId') projectId?: string, @Query('judgeId') judgeId?: string) {
     const db = this.mongoService.getDb();
@@ -84,19 +95,21 @@ export class JudgingMongoController {
   }
 
   @Post('ballots')
+  @Roles(Role.JUDGE, Role.ADMIN, Role.ORGANIZER)
   @ApiOperation({ summary: 'Record a live signed judge ballot into MongoDB with cryptographic receipt' })
-  async submitLiveBallot(@Body() body: any) {
+  async submitLiveBallot(@Body() body: any, @Req() req?: any) {
     const db = this.mongoService.getDb();
     if (!db) throw new NotFoundException('MongoDB not connected');
 
-    const ballotId = `bal-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const ballotId = `bal-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
     const timestamp = new Date().toISOString();
     const score = Number(body.score) || 0;
+    const judgeId = req?.user?.id || body.judgeId || 'anon-judge';
 
     const ballotDoc = {
       id: ballotId,
       projectId: body.projectId,
-      judgeId: body.judgeId || 'anon-judge',
+      judgeId,
       score,
       criteria: body.criteria || {},
       notes: body.notes || '',
@@ -122,6 +135,9 @@ export class JudgingMongoController {
       }
     );
 
+    // Cryptographically hash the ballot payload for ledger integrity
+    const hash = crypto.createHash('sha256').update(JSON.stringify(ballotDoc)).digest('hex');
+
     // Append cryptographic receipt to trust ledger
     const blockHeight = (await db.collection('trust_ledger').countDocuments()) + 1;
     await db.collection('trust_ledger').insertOne({
@@ -129,8 +145,9 @@ export class JudgingMongoController {
       action: 'BALLOT_RECORDED',
       ballotId,
       projectId: body.projectId,
+      judgeId,
       score,
-      sha256: `sha256-${Math.random().toString(16).substring(2, 18)}${Math.random().toString(16).substring(2, 18)}`,
+      sha256: `sha256:${hash}`,
       timestamp,
     });
 
@@ -139,6 +156,7 @@ export class JudgingMongoController {
       ballotId,
       projectMeanScore: newMean,
       totalProjectBallots: projectBallots.length,
+      sha256: `sha256:${hash}`,
       timestamp,
     };
   }
@@ -194,6 +212,15 @@ export class DashboardController {
       percentage: Number(((count / divisor) * 100).toFixed(1)),
     }));
 
+    // Calculate distinct active judges from real ballots
+    const distinctJudges = new Set<string>();
+    ballots.forEach((b) => {
+      if (b.judgeId && (b.status === 'LOCKED' || b.status === 'SUBMITTED' || b.status === 'ASSIGNED')) {
+        distinctJudges.add(b.judgeId);
+      }
+    });
+    const judgesOnlineCount = distinctJudges.size;
+
     return {
       event: event || {
         id: 'live-cluster',
@@ -210,6 +237,8 @@ export class DashboardController {
         reviewCompletionPercentage: completionPercent,
         calibratedMeanScore: meanScore,
         disputesFlagged: disputes.length,
+        judgesOnline: judgesOnlineCount,
+        judgesRegistered: judgesOnlineCount,
         ballotsVoided: ballots.filter((b) => b.status === 'VOIDED').length,
         recusalsHandled: ballots.filter((b) => b.status === 'RECUSED').length,
         tiesBroken: 0,

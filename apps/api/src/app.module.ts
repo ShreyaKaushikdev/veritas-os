@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { EventsModule } from './events/events.module';
 import { TeamsModule } from './teams/teams.module';
@@ -10,10 +12,18 @@ import { TrustModule } from './trust/trust.module';
 import { SupportModule } from './support/support.module';
 import { ChatModule } from './chat/chat.module';
 import { DatabaseModule } from './database/database.module';
+import { ParticipantAutomationModule } from './participant-automation/participant-automation.module';
+import { LeadstreamModule } from './leadstream/leadstream.module';
 import { PrismaService } from './prisma.service';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute window
+        limit: 100, // 100 requests per minute (global default)
+      },
+    ]),
     DatabaseModule,
     AuthModule,
     EventsModule,
@@ -25,7 +35,16 @@ import { PrismaService } from './prisma.service';
     TrustModule,
     SupportModule,
     ChatModule,
+    ParticipantAutomationModule,
+    LeadstreamModule,
   ],
-  providers: [PrismaService],
+  providers: [
+    PrismaService,
+    // ✅ FIX #3: Global rate limiting guard
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

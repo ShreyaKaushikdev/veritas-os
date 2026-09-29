@@ -102,7 +102,20 @@ export class JudgingService {
   }
 
   async getJudgeAssignments(eventId: string, judgeId: string) {
+    // ✅ FIX #4: Data Isolation - Verify event exists
     const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+    
+    // ✅ FIX #4: Data Isolation - Verify judge is member of this event
+    const membership = await this.prisma.membership.findFirst({
+      where: { eventId, userId: judgeId, role: Role.JUDGE }
+    });
+    if (!membership) {
+      throw new ForbiddenException('Judge is not part of this event');
+    }
+    
     const isBlind = event?.blindReviewMode ?? false;
     const shuffleSeed = event?.shuffleSeed || 'dogfood-entropy-seed-2026';
 
@@ -176,6 +189,22 @@ export class JudgingService {
     const event = await this.prisma.event.findUnique({ where: { id: data.eventId } });
     if (!event || !event.currentRubricId) {
       throw new BadRequestException('Active rubric not configured');
+    }
+
+    // ✅ FIX #4: Data Isolation - Verify project belongs to this event
+    const project = await this.prisma.project.findUnique({
+      where: { id: data.projectId }
+    });
+    if (!project || project.eventId !== data.eventId) {
+      throw new ForbiddenException('Project does not belong to this event');
+    }
+
+    // ✅ FIX #4: Data Isolation - Verify judge is part of this event
+    const membership = await this.prisma.membership.findFirst({
+      where: { eventId: data.eventId, userId: data.judgeId, role: Role.JUDGE }
+    });
+    if (!membership) {
+      throw new ForbiddenException('Judge is not part of this event');
     }
 
     const rubric = await this.prisma.rubricVersion.findUnique({
@@ -357,12 +386,20 @@ export class JudgingService {
     reason: string;
     note?: string;
   }) {
-    // 1. Verify existing active assignment
+    // ✅ FIX #4: Data Isolation - Verify project belongs to event
+    const project = await this.prisma.project.findUnique({
+      where: { id: data.projectId }
+    });
+    if (!project || project.eventId !== data.eventId) {
+      throw new ForbiddenException('Project does not belong to this event');
+    }
+
+    // ✅ FIX #4: Data Isolation - Verify assignment belongs to this event (critical - was missing before)
     const assignment = await this.prisma.assignment.findFirst({
-      where: { projectId: data.projectId, judgeId: data.judgeId, status: 'ACTIVE' },
+      where: { projectId: data.projectId, judgeId: data.judgeId, status: 'ACTIVE', eventId: data.eventId },
     });
     if (!assignment) {
-      throw new BadRequestException('No active assignment found for this project and judge');
+      throw new BadRequestException('No active assignment found for this project and judge in this event');
     }
 
     // 2. Void any in-progress or drafted ballot for this judge/project

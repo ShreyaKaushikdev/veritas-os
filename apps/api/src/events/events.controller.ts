@@ -11,13 +11,21 @@ export class EventsController {
   constructor(private eventsService: EventsService) {}
 
   @Get()
+  @Roles(Role.VISITOR, Role.PARTICIPANT, Role.JUDGE, Role.ORGANIZER, Role.ADMIN)
   async listEvents() {
     return this.eventsService.listEvents();
   }
 
   @Get(':id')
+  @Roles(Role.VISITOR, Role.PARTICIPANT, Role.JUDGE, Role.ORGANIZER, Role.ADMIN)
   async getEvent(@Param('id') id: string) {
     return this.eventsService.getEvent(id);
+  }
+
+  @Post('generate-from-prompt')
+  @Roles(Role.ORGANIZER, Role.ADMIN)
+  async generateFromPrompt(@Body() body: { prompt: string }) {
+    return this.eventsService.generateEventFromPrompt(body.prompt);
   }
 
   @Post()
@@ -25,7 +33,7 @@ export class EventsController {
   async createEvent(@Body() body: any, @Req() req: any) {
     return this.eventsService.createEvent({
       ...body,
-      creatorId: req.user.id,
+      creatorId: req.user?.id || 'sys-organizer',
     });
   }
 
@@ -51,6 +59,18 @@ export class EventsController {
   @Roles(Role.ORGANIZER, Role.ADMIN)
   async getCommandCenter(@Param('id') id: string) {
     return this.eventsService.getCommandCenterMetrics(id);
+  }
+
+  @Get(':id/participants')
+  @Roles(Role.ORGANIZER, Role.ADMIN)
+  async getParticipants(@Param('id') id: string) {
+    return this.eventsService.getParticipantsList(id);
+  }
+
+  @Get(':id/projects')
+  @Roles(Role.ORGANIZER, Role.ADMIN)
+  async getProjects(@Param('id') id: string) {
+    return this.eventsService.getProjectsList(id);
   }
 
   @Get(':id/audience/csv')

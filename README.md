@@ -6,6 +6,24 @@ DOGFOOD OS is an offline-first, agent-native platform that helps participants im
 
 ---
 
+## 📚 Documentation
+
+| Document | Read it when you want to |
+|---|---|
+| [**NOTES.md**](./NOTES.md) | **Start here.** Ground truth: how the system actually flows today, every gap with `file:line` evidence, the doc-drift matrix, and the phased remediation backlog |
+| [**AUTOPILOT-API.md**](./AUTOPILOT-API.md) | **The automation feature.** Prompt → blueprint → event. Full data model, DTOs, endpoints, the apply transaction, automation rules, file manifest, and acceptance tests |
+| [**SYSTEM-DESIGN.md**](./SYSTEM-DESIGN.md) | Understand or change the design: architecture, module boundaries, data model, state machines, integrity model, API, scaling, reliability, security, observability, deployment, and the design decision log |
+| [**ENGINEERING-PRINCIPLES.md**](./ENGINEERING-PRINCIPLES.md) | Write or review code: 36 normative rules, each with an enforcement mechanism, a current-state verdict, and a CI gate |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | The short-form architecture overview |
+| [DATA-MODEL.md](./DATA-MODEL.md) | Entities, invariants, and the export manifest |
+| [JUDGING.md](./JUDGING.md) | Scoring, calibration, and disagreement routing |
+| [THREAT-MODEL.md](./THREAT-MODEL.md) | Assets, the attack matrix, and the cryptographic boundary |
+| [benchmarks/BENCHMARKS.md](./benchmarks/BENCHMARKS.md) | The measurement standard ("Honesty Rules First") and the k6 suites |
+
+> ⚠️ **Verification status.** Several claims in the sections below are **not currently substantiated** — the published contract documents a fixture stub, 37 routes are unauthenticated, `POST /api/v1/auth/google` does not verify its credential, and `docker compose up` fails on three independent blockers. `acceptance-report.txt` is **not** `run.py` output and should be deleted. See [`NOTES.md`](./NOTES.md) for the evidence and [`NOTES.md` §7](./NOTES.md#7-remediation-backlog) for the fix order. Do not cite the numbers in this README until Phase 3 of that backlog lands.
+
+---
+
 ## ⚡ Quickstart (Under 90 Seconds)
 
 ### Primary Production Deployment (Docker Compose)

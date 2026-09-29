@@ -174,6 +174,34 @@ export default function GalleryPage() {
 
   return (
     <div className="space-y-8 pb-16">
+      {/* Quick Return Bar for Organizers & Judges */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-xs font-mono shadow-md">
+        <div className="flex items-center space-x-2.5">
+          <Link
+            href="/organizer"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold flex items-center space-x-1.5 transition-all shadow-sm"
+          >
+            <span>← Back to Organizer Control Center</span>
+          </Link>
+          <span className="text-slate-600 hidden sm:inline">•</span>
+          <span className="text-slate-400 hidden sm:inline">Viewing project submissions & Merkle proofs</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link
+            href="/organizer/command-center"
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 flex items-center space-x-1 transition-all"
+          >
+            <span>Command Center ↗</span>
+          </Link>
+          <Link
+            href="/judge-cockpit"
+            className="px-3 py-1.5 rounded-xl bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-800 flex items-center space-x-1 transition-all"
+          >
+            <span>Judge Cockpit ↗</span>
+          </Link>
+        </div>
+      </div>
       
       {/* Top Banner / Hero Command Center - Natural Aesthetic Green & White */}
       <section className="relative rounded-3xl bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/40 border border-emerald-200/80 p-6 sm:p-8 shadow-sm shadow-emerald-950/5 overflow-hidden">
@@ -224,6 +252,13 @@ export default function GalleryPage() {
 
           {/* Action Toolbar on Right */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+            <Link
+              href="/organizer"
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-xl text-xs font-mono text-emerald-400 font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+            >
+              <span>← Control Center</span>
+            </Link>
+
             <button
               onClick={fetchLiveProjects}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-emerald-50/80 border border-emerald-200 hover:border-emerald-300 rounded-xl text-xs font-mono text-slate-700 hover:text-emerald-800 transition-all shadow-xs cursor-pointer active:scale-95 group font-medium"

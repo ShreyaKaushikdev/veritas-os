@@ -1,11 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Award, Sliders, AlertTriangle, ShieldCheck, Activity, Send, CheckCircle2, ArrowUpDown, HelpCircle, Download, Mail, Users, FileSpreadsheet, Clock, Image as ImageIcon, Check, Pin, LayoutDashboard, Sparkles, Copy, RefreshCw, Zap, Rocket, Terminal, Layers, Cpu } from 'lucide-react';
+import { Award, Sliders, AlertTriangle, ShieldCheck, Activity, Send, CheckCircle2, ArrowUpDown, HelpCircle, Download, Mail, Users, FileSpreadsheet, Clock, Image as ImageIcon, Check, Pin, LayoutDashboard, Sparkles, Copy, RefreshCw, Zap, Rocket, Terminal, Layers, Cpu, PlusCircle, ArrowRight, Trash2, Lock } from 'lucide-react';
+import CreateHackathonModal from '@/components/CreateHackathonModal';
 
 export default function OrganizerPage() {
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'SUPPORT_INBOX' | 'AUDIENCE' | 'PROMPT_ORCHESTRATOR'>('OVERVIEW');
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [realStats, setRealStats] = useState<any>({
+    event: { name: 'Live Hackathon Workspace', status: 'READY' },
+    disputes: [],
+    telemetry: {
+      teamsRegistered: 0,
+      assignedBallots: 0,
+      ballotsSubmitted: 0,
+      ballotsRemaining: 0,
+      reviewCompletionPercentage: 0,
+      calibratedMeanScore: 0,
+      disputesFlagged: 0,
+    }
+  });
+  const [liveProjects, setLiveProjects] = useState<any[]>([]);
+  const [clearing, setClearing] = useState(false);
+  const [clearSuccess, setClearSuccess] = useState<string | null>(null);
   const [promptInput, setPromptInput] = useState(
     'Run a 48-hour Solana & Autonomous Agents Hackathon with 500 hackers, $60,000 prize pool, 3 tracks (DeFi Execution Agents, ZK Proof Verification, DePIN Mesh), 4 judges per project with blind peer evaluation, anchor calibration, and pairwise Elo ranking.'
   );
@@ -23,6 +41,150 @@ export default function OrganizerPage() {
   });
 
   const [disagreementDispatched, setDisagreementDispatched] = useState(false);
+
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [hackathons, setHackathons] = useState<any[]>([]);
+  const [hackathonsLoading, setHackathonsLoading] = useState(true);
+
+  // Fetch active hackathons from the events API
+  const fetchHackathons = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const token = localStorage.getItem('dogfood_auth_token') || localStorage.getItem('dogfood_token');
+      const res = await fetch(`${apiUrl}/api/v1/events`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setHackathons(data);
+        }
+      }
+    } catch (e) {
+      console.warn('Events fetch error:', e);
+    } finally {
+      setHackathonsLoading(false);
+    }
+  };
+
+  // Fetch real live stats & projects from backend
+  const fetchLiveTelemetry = async () => {
+    try {
+      const res = await fetch('http://localhost:4000/dashboard/stats');
+      if (res.ok) {
+        const data = await res.json();
+        setRealStats(data);
+      }
+    } catch (e) {
+      console.warn('Live stats fetch error:', e);
+    }
+
+    try {
+      const projRes = await fetch('http://localhost:4000/submissions');
+      if (projRes.ok) {
+        const projData = await projRes.json();
+        if (Array.isArray(projData)) {
+          setLiveProjects(projData);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    fetchHackathons();
+    fetchLiveTelemetry();
+    const interval = setInterval(fetchLiveTelemetry, 3000);
+
+    const syncUser = () => {
+      try {
+        const savedUserStr = localStorage.getItem('dogfood_user');
+        if (savedUserStr) {
+          setCurrentUser(JSON.parse(savedUserStr));
+        } else {
+          setCurrentUser(null);
+        }
+      } catch (e) {
+        setCurrentUser(null);
+      }
+    };
+    syncUser();
+
+    const handleUserUpdate = (e: any) => {
+      if (e.detail) setCurrentUser(e.detail);
+      else syncUser();
+    };
+
+    const handleHackathonCreated = (e: any) => {
+      fetchHackathons();
+      fetchLiveTelemetry();
+      setActiveTab('OVERVIEW');
+      setClearSuccess(`🚀 "${e.detail?.event?.name || 'Hackathon'}" deployed! Showing real-time dashboard.`);
+      setTimeout(() => setClearSuccess(null), 5000);
+    };
+
+    window.addEventListener('storage', syncUser);
+    window.addEventListener('dogfood_user_updated', handleUserUpdate as EventListener);
+    window.addEventListener('hackathon_created', handleHackathonCreated as EventListener);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', syncUser);
+      window.removeEventListener('dogfood_user_updated', handleUserUpdate as EventListener);
+      window.removeEventListener('hackathon_created', handleHackathonCreated as EventListener);
+    };
+  }, []);
+
+  const handleClearDatabase = async () => {
+    if (!confirm('Are you sure you want to clear all mock/seeded entries and run 100% on real live data?')) return;
+    setClearing(true);
+    try {
+      const res = await fetch('http://localhost:4000/database/clear', {
+        method: 'POST',
+      });
+      if (res.ok) {
+        setClearSuccess('All mock entries wiped! Database is now 100% clean live slate.');
+        setLiveProjects([]);
+        setRealStats({
+          event: { name: 'Clean Hackathon Workspace', status: 'READY' },
+          disputes: [],
+          telemetry: {
+            teamsRegistered: 0,
+            assignedBallots: 0,
+            ballotsSubmitted: 0,
+            ballotsRemaining: 0,
+            reviewCompletionPercentage: 0,
+            calibratedMeanScore: 0,
+            disputesFlagged: 0,
+          }
+        });
+        setTimeout(() => setClearSuccess(null), 4000);
+      }
+    } catch (e) {
+      console.warn('Clear error:', e);
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  const handleReseedDatabase = async () => {
+    setClearing(true);
+    try {
+      const res = await fetch('http://localhost:4000/database/reseed', {
+        method: 'POST',
+      });
+      if (res.ok) {
+        fetchLiveTelemetry();
+        setClearSuccess('Sandbox demo entries seeded!');
+        setTimeout(() => setClearSuccess(null), 4000);
+      }
+    } catch (e) {
+      console.warn('Reseed error:', e);
+    } finally {
+      setClearing(false);
+    }
+  };
 
   // Simulated projects for weight sensitivity analysis
   const [simulatedMovements, setSimulatedMovements] = useState([
@@ -212,6 +374,13 @@ export default function OrganizerPage() {
       if (res.ok) {
         const data = await res.json();
         setDeploySuccess(data.message || 'Hackathon successfully deployed to live cluster!');
+        fetchLiveTelemetry();
+        window.dispatchEvent(new CustomEvent('hackathon_created', { detail: synthesizedBlueprint }));
+        setTimeout(() => {
+          setActiveTab('OVERVIEW');
+          setClearSuccess(`🚀 "${synthesizedBlueprint?.event?.name || 'Hackathon'}" deployed! Showing real-time dashboard.`);
+          setTimeout(() => setClearSuccess(null), 5000);
+        }, 1200);
       }
     } catch (e) {
       console.warn('Deploy error:', e);
@@ -223,95 +392,267 @@ export default function OrganizerPage() {
   const openTicketsCount = supportTickets.filter((t) => t.status === 'OPEN').length;
   const isSpike = openTicketsCount >= 5;
 
+  // STRICT RBAC GUARD: Non-Organizers/Non-Admins cannot view the Organizer Control Center or Create Hackathon tools
+  if (!currentUser || (currentUser.role !== 'ORGANIZER' && currentUser.role !== 'ADMIN')) {
+    return (
+      <div className="min-h-[75vh] flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full rounded-3xl bg-slate-900/95 border border-slate-800 p-8 sm:p-10 shadow-2xl backdrop-blur-2xl space-y-6 text-center relative overflow-hidden">
+          {/* Ambient Security Glow */}
+          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Security Shield Icon */}
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/10">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>ORGANIZER PERMISSIONS REQUIRED</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-sans">
+              {currentUser ? 'Restricted to Event Organizers' : 'Sign In Required'}
+            </h1>
+            <p className="text-slate-400 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
+              Event creation, prompt synthesis, rubric weights calibration, and live autopilot are strictly restricted to <strong className="text-white">Organizers</strong>.
+            </p>
+          </div>
+
+          {/* Current Persona Card */}
+          {currentUser ? (
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-left flex items-center justify-between text-xs font-mono">
+              <div>
+                <div className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">Signed in as</div>
+                <div className="text-white font-bold text-sm mt-0.5">{currentUser.name}</div>
+                <div className="text-slate-400 text-[11px]">{currentUser.email}</div>
+              </div>
+              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                currentUser.role === 'JUDGE' ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' : 'bg-teal-500/20 text-teal-300 border-teal-500/40'
+              }`}>
+                {currentUser.role}
+              </span>
+            </div>
+          ) : (
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-center text-xs font-mono text-slate-400">
+              You are currently signed out (Visitor mode).
+            </div>
+          )}
+
+          {/* Action CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => {
+                const u = { name: 'Dr. Elena Rostova', email: 'elena@dogfood.os', role: 'ORGANIZER' };
+                localStorage.setItem('dogfood_user', JSON.stringify(u));
+                setCurrentUser(u);
+                window.dispatchEvent(new CustomEvent('dogfood_user_updated', { detail: u }));
+                window.dispatchEvent(new Event('storage'));
+              }}
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-xs font-mono shadow-lg shadow-amber-500/20 active:scale-98 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Switch to Elena (Organizer Persona)</span>
+            </button>
+
+            <Link
+              href={currentUser?.role === 'JUDGE' ? '/judge' : '/participant'}
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs font-mono border border-slate-700 active:scale-98 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+            >
+              <ArrowRight className="w-4 h-4" />
+              <span>Go to {currentUser?.role === 'JUDGE' ? 'Judge Cockpit' : 'Participant Hub'}</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
-      {/* Header & Autopilot Dial */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2 text-xs font-mono text-brand-amber">
-            <Award className="w-3.5 h-3.5" />
-            <span>ORGANIZER OPERATIONS & POLICY ENGINE</span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Event overview</h1>
-        </div>
+      {/* ATMOSPHERIC CLOUD GESTURE HERO BANNER (Stitch Obsidian & Mobbin Aesthetic) */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 border border-emerald-500/30 p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_40px_rgba(16,185,129,0.12)]">
+        {/* Luminous Mesh Cloud Orbs */}
+        <div className="absolute -top-12 -right-12 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute -bottom-16 left-1/3 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/3 right-1/4 w-60 h-60 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Tabs */}
-          <div className="flex items-center space-x-1 p-1 bg-dark-900 border border-white/10 rounded-xl text-xs font-mono">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-mono border border-emerald-500/30 shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-spin" style={{ animationDuration: '8s' }} />
+              <span className="font-semibold uppercase tracking-wider">AUTONOMOUS HACKATHON OPERATING ENGINE</span>
+            </div>
+            
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center gap-3">
+              Event Operations & Control Center
+            </h1>
+            
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Synthesize and deploy hackathons in seconds with prompt-to-rubric calibration, pairwise Elo ranking, and zero cloud runtime lock-in.
+            </p>
+
+            {/* Quick Template Presets Row */}
+            <div className="pt-2 flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-mono text-slate-400 font-semibold mr-1">Quick Presets:</span>
+              {[
+                { label: '⚡ Solana & AI ($60k)', prompt: 'Run a 48-hour Solana & Autonomous Agents Hackathon with 500 hackers, $60,000 prize pool, 3 tracks (DeFi Execution Agents, ZK Proof Verification, DePIN Mesh), 4 judges per project with blind peer evaluation, anchor calibration, and pairwise Elo ranking.' },
+                { label: '🛡️ ZK Cryptography ($40k)', prompt: 'Organize a 36-hour ZK Cryptography & Verifiable Systems hackathon for 300 participants, $40k prize pool, 3 tracks (Provable State Machines, Private Voting DAGs, Circom Compilers), strict blind evaluation, anti-collusion trimmed mean, and zero-knowledge receipts.' },
+                { label: '🌍 ClimateTech DePIN ($100k)', prompt: 'Launch a 72-hour global ClimateTech and DePIN hackathon with 800 hackers, $100k quadratic funding pool, 4 tracks (Renewable Microgrids, Carbon Proofs, Edge Sensor Networks, Circular Supply Chain), anchor calibrated scoring, and automated tie-breaking.' },
+              ].map((p, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setPromptInput(p.prompt);
+                    setActiveTab('PROMPT_ORCHESTRATOR');
+                    handleSynthesize(p.prompt);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-300 border border-slate-700 hover:border-emerald-500/40 text-[11px] font-mono transition-all cursor-pointer"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Action CTAs */}
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
+            {/* Primary Eye-Catching Create Hackathon Button */}
             <button
-              onClick={() => setActiveTab('OVERVIEW')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                activeTab === 'OVERVIEW'
-                  ? 'bg-brand-amber text-dark-950 font-bold shadow-sm'
-                  : 'text-gray-400 hover:text-white'
-              }`}
+              onClick={() => setCreateModalOpen(true)}
+              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-[1.02] active:scale-98 transition-all flex items-center justify-center space-x-2.5 cursor-pointer"
             >
-              Overview & Sandbox
+              <PlusCircle className="w-5 h-5 text-slate-950 stroke-[2.5]" />
+              <span>+ Create Hackathon</span>
             </button>
-            <button
-              onClick={() => setActiveTab('SUPPORT_INBOX')}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 ${
-                activeTab === 'SUPPORT_INBOX'
-                  ? 'bg-brand-amber text-dark-950 font-bold shadow-sm'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-              <span>Help requests</span>
-              {openTicketsCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-brand-crimson text-white font-bold">
-                  {openTicketsCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('AUDIENCE')}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 ${
-                activeTab === 'AUDIENCE'
-                  ? 'bg-brand-amber text-dark-950 font-bold shadow-sm'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Audience & Sheets</span>
-            </button>
+
+            {/* Prompt-to-Hackathon Tab Shortcut */}
             <button
               onClick={() => {
                 setActiveTab('PROMPT_ORCHESTRATOR');
                 if (!synthesizedBlueprint) handleSynthesize();
               }}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 ${
-                activeTab === 'PROMPT_ORCHESTRATOR'
-                  ? 'bg-gradient-to-r from-brand-emerald to-brand-teal text-dark-950 font-bold shadow-md'
-                  : 'text-emerald-400 hover:text-white border border-emerald-500/20'
-              }`}
+              className="px-4 py-2.5 rounded-2xl bg-slate-800/90 hover:bg-slate-800 text-emerald-400 hover:text-white border border-emerald-500/40 hover:border-emerald-500 text-xs font-mono font-bold shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400 group-hover:rotate-12 transition-transform" />
-              <span>Prompt-to-Hackathon ⚡</span>
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span>⚡ Prompt-to-Hackathon</span>
             </button>
-          </div>
 
+            {/* Clear Database (Clean Slate) Button */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleClearDatabase}
+                disabled={clearing}
+                title="Wipe all mock/seeded records to run 100% on real live data"
+                className="flex-1 px-3 py-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-white border border-red-500/30 text-[11px] font-mono font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                <span>{clearing ? 'Clearing...' : 'Clear All Entries 🧹'}</span>
+              </button>
+              
+              <button
+                onClick={handleReseedDatabase}
+                disabled={clearing}
+                title="Seed demo hackathon state"
+                className="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 text-[11px] font-mono transition-all cursor-pointer"
+              >
+                Seed Demo
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Clear Success Alert */}
+      {clearSuccess && (
+        <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-200 flex items-center justify-between text-xs font-mono shadow-md animate-in fade-in">
+          <div className="flex items-center space-x-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            <span>{clearSuccess}</span>
+          </div>
+          <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">LIVE REPLICA SYNCED</span>
+        </div>
+      )}
+
+      {/* Tabs Bar & Autopilot Mode Dial */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Navigation Tabs */}
+        <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-900 border border-slate-800 rounded-2xl text-xs font-mono shadow-sm">
+          <button
+            onClick={() => setActiveTab('OVERVIEW')}
+            className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'OVERVIEW'
+                ? 'bg-amber-400 text-slate-950 font-bold shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Overview & Sandbox
+          </button>
+          <button
+            onClick={() => setActiveTab('SUPPORT_INBOX')}
+            className={`px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer ${
+              activeTab === 'SUPPORT_INBOX'
+                ? 'bg-amber-400 text-slate-950 font-bold shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>Help requests</span>
+            {openTicketsCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-red-500 text-white font-bold">
+                {openTicketsCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('AUDIENCE')}
+            className={`px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer ${
+              activeTab === 'AUDIENCE'
+                ? 'bg-amber-400 text-slate-950 font-bold shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Audience & Sheets</span>
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('PROMPT_ORCHESTRATOR');
+              if (!synthesizedBlueprint) handleSynthesize();
+            }}
+            className={`px-4 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer ${
+              activeTab === 'PROMPT_ORCHESTRATOR'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black shadow-md shadow-emerald-500/20'
+                : 'text-emerald-400 hover:text-white border border-emerald-500/30 bg-emerald-500/5'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400 group-hover:rotate-12 transition-transform" />
+            <span>Prompt-to-Hackathon ⚡</span>
+          </button>
+        </div>
+
+        {/* Secondary Links & Autopilot Dial */}
+        <div className="flex items-center gap-3">
           <Link
             href="/dashboard"
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-600/20 text-purple-300 border border-purple-500/40 hover:bg-purple-600/30 text-xs font-mono transition-all shadow-sm"
+            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-2xl bg-purple-600/20 text-purple-300 border border-purple-500/40 hover:bg-purple-600/30 text-xs font-mono transition-all shadow-sm"
           >
             <LayoutDashboard className="w-3.5 h-3.5 text-purple-400" />
             <span>Executive Cake View ✨</span>
           </Link>
 
           {/* Autopilot Dial Selector */}
-          <div className="glass-panel px-3 py-1.5 rounded-xl flex items-center space-x-2 text-xs font-mono">
-            <span className="text-gray-400">AUTOPILOT:</span>
+          <div className="p-1 bg-slate-900 border border-slate-800 rounded-2xl flex items-center space-x-1.5 text-xs font-mono">
+            <span className="text-slate-400 px-2">AUTOPILOT:</span>
             {(['OFF', 'ASSIST', 'FULL'] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setAutopilotMode(mode)}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                className={`px-2.5 py-1 rounded-xl font-bold transition-all cursor-pointer ${
                   autopilotMode === mode
                     ? mode === 'FULL'
-                      ? 'bg-brand-emerald text-dark-950 shadow-sm'
-                      : 'bg-brand-amber text-dark-950 shadow-sm'
-                    : 'text-gray-400 hover:text-white bg-dark-850'
+                      ? 'bg-emerald-400 text-slate-950 shadow-sm'
+                      : 'bg-amber-400 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white bg-slate-800'
                 }`}
               >
                 {mode}
@@ -321,190 +662,436 @@ export default function OrganizerPage() {
         </div>
       </div>
 
-      {/* TAB 1: OVERVIEW & SANDBOX */}
+      {/* TAB 1: OVERVIEW & SANDBOX (CONNECTED TO REAL LIVE BACKEND DATA) */}
       {activeTab === 'OVERVIEW' && (
         <div className="space-y-8">
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* ACTIVE HACKATHONS LIST                                         */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 to-emerald-500/20 border border-amber-500/30 flex items-center justify-center">
+                  <Rocket className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-white tracking-tight">Your Hackathons</h2>
+                  <p className="text-[11px] font-mono text-slate-400">Active events created via the platform</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCreateModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold text-xs font-mono shadow-md flex items-center space-x-1.5 cursor-pointer transition-all hover:scale-[1.02] active:scale-98"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>+ New Hackathon</span>
+              </button>
+            </div>
+
+            {hackathonsLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 animate-pulse">
+                    <div className="h-5 w-2/3 bg-slate-800 rounded mb-3" />
+                    <div className="h-3 w-full bg-slate-800/60 rounded mb-2" />
+                    <div className="h-3 w-4/5 bg-slate-800/40 rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : hackathons.length === 0 ? (
+              <div className="p-8 rounded-3xl bg-slate-900/60 border border-dashed border-slate-700 text-center space-y-4">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+                  <Rocket className="w-8 h-8 text-slate-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-300">No Hackathons Yet</h3>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    Create your first hackathon to see it listed here. Use the prompt orchestrator or the form to get started.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setCreateModalOpen(true)}
+                  className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold text-xs font-mono shadow-lg cursor-pointer transition-all"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Create Your First Hackathon</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {hackathons.map((event: any) => {
+                  const statusColors: Record<string, string> = {
+                    'DRAFT': 'bg-slate-500/20 text-slate-300 border-slate-500/30',
+                    'REGISTRATION_OPEN': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+                    'SUBMISSION_OPEN': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+                    'SUBMISSION_FROZEN': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+                    'JUDGING_OPEN': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+                    'RESULTS_FINALIZED': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+                    'RESULTS_PUBLISHED': 'bg-teal-500/20 text-teal-300 border-teal-500/30',
+                    'ARCHIVED': 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
+                  };
+                  const statusLabel = (event.status || 'DRAFT').replace(/_/g, ' ');
+                  const statusClass = statusColors[event.status] || statusColors['DRAFT'];
+                  const isActive = !['ARCHIVED', 'RESULTS_PUBLISHED'].includes(event.status);
+                  const teamCount = event._count?.teams ?? 0;
+                  const projectCount = event._count?.projects ?? 0;
+
+                  return (
+                    <div
+                      key={event.id}
+                      className={`group relative p-5 rounded-2xl border transition-all hover:scale-[1.01] ${
+                        isActive
+                          ? 'bg-gradient-to-br from-slate-900 via-slate-900/95 to-emerald-950/30 border-emerald-500/25 hover:border-emerald-500/50 shadow-lg hover:shadow-emerald-500/10'
+                          : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      {/* Active pulse dot */}
+                      {isActive && (
+                        <div className="absolute top-4 right-4">
+                          <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border border-emerald-400" />
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="space-y-3">
+                        {/* Status Badge */}
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${statusClass}`}>
+                          {statusLabel}
+                        </span>
+
+                        {/* Event Name */}
+                        <h3 className="text-base font-black text-white tracking-tight leading-snug pr-6">
+                          {event.name}
+                        </h3>
+
+                        {/* Description */}
+                        {event.description && (
+                          <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2">
+                            {event.description}
+                          </p>
+                        )}
+
+                        {/* Tracks */}
+                        {event.tracks && event.tracks.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {event.tracks.slice(0, 4).map((track: any, i: number) => (
+                              <span key={i} className="text-[9px] font-mono px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
+                                {track.name || track}
+                              </span>
+                            ))}
+                            {event.tracks.length > 4 && (
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-500">+{event.tracks.length - 4}</span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Metrics Row */}
+                        <div className="flex items-center gap-4 pt-1">
+                          <div className="flex items-center space-x-1.5 text-[11px] font-mono text-slate-400">
+                            <Users className="w-3.5 h-3.5 text-slate-500" />
+                            <span><strong className="text-white">{teamCount}</strong> teams</span>
+                          </div>
+                          <div className="flex items-center space-x-1.5 text-[11px] font-mono text-slate-400">
+                            <Layers className="w-3.5 h-3.5 text-slate-500" />
+                            <span><strong className="text-white">{projectCount}</strong> projects</span>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2 pt-2">
+                          <Link
+                            href={`/organizer/command-center?eventId=${event.id}`}
+                            className="flex-1 px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 text-[11px] font-mono font-bold text-center transition-all cursor-pointer flex items-center justify-center space-x-1.5"
+                          >
+                            <Terminal className="w-3 h-3" />
+                            <span>Command Center</span>
+                          </Link>
+                          <Link
+                            href={`/organizer/create-event?edit=${event.id}`}
+                            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-mono font-bold text-center transition-all cursor-pointer flex items-center justify-center space-x-1.5"
+                          >
+                            <Sliders className="w-3 h-3" />
+                            <span>Edit</span>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-slate-800/50" />
+          {/* Active Hackathon Live Status Bar */}
+          <div className="p-5 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-emerald-950/40 border border-emerald-500/30 shadow-xl backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-inner">
+                <Zap className="w-6 h-6 text-emerald-400 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+                    LIVE WORKSPACE
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    Status: <strong className="text-white">{realStats?.event?.status || 'JUDGING_OPEN'}</strong>
+                  </span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  {realStats?.event?.name || 'Live Autonomous Hackathon Workspace'}
+                </h2>
+                {realStats?.event?.tracks && realStats.event.tracks.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    {realStats.event.tracks.map((t: any, i: number) => (
+                      <span key={i} className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
+                        {t.name || t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <Link
+                href={`/organizer/command-center?eventId=${realStats?.event?.id || 'live'}`}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold text-xs font-mono shadow-md flex items-center space-x-1.5 cursor-pointer transition-all"
+              >
+                <Terminal className="w-3.5 h-3.5 text-slate-950" />
+                <span>Command Center ↗</span>
+              </Link>
+              <Link
+                href="/gallery"
+                className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs font-mono border border-slate-700 flex items-center space-x-1.5 cursor-pointer transition-all"
+              >
+                <Layers className="w-3.5 h-3.5 text-slate-400" />
+                <span>Public Gallery</span>
+              </Link>
+              <button
+                onClick={() => setCreateModalOpen(true)}
+                className="px-3 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-bold text-xs font-mono border border-emerald-500/30 flex items-center space-x-1.5 cursor-pointer transition-all"
+              >
+                <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
+                <span>New Prompt ✨</span>
+              </button>
+            </div>
+          </div>
+
           {/* Top Metrics Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="glass-card p-4 rounded-xl space-y-1">
-              <span className="text-[10px] font-mono text-gray-400">HOW THE EVENT IS GOING</span>
-              <div className="text-2xl font-black text-brand-emerald font-mono">94%</div>
-              <p className="text-[11px] text-gray-400">All submissions frozen & verified</p>
+            <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-lg backdrop-blur-xl space-y-1.5 hover:border-emerald-500/40 transition-all">
+              <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">HOW THE EVENT IS GOING</span>
+              <div className="text-3xl font-black text-emerald-400 font-mono tracking-tight">
+                {realStats?.telemetry?.teamsRegistered > 0
+                  ? `${Math.min(100, Math.round((realStats.telemetry.teamsRegistered / (realStats?.event?.participants || 400)) * 100))}%`
+                  : '0%'}
+              </div>
+              <p className="text-xs text-slate-300">
+                {realStats?.telemetry?.teamsRegistered > 0
+                  ? `${realStats.telemetry.teamsRegistered} / ${realStats?.event?.participants || 400} teams registered`
+                  : '0 registered • Awaiting team submissions'}
+              </p>
             </div>
-            <div className="glass-card p-4 rounded-xl space-y-1">
-              <span className="text-[10px] font-mono text-gray-400">SCORING PROGRESS</span>
-              <div className="text-2xl font-black text-brand-teal font-mono">100%</div>
-              <p className="text-[11px] text-gray-400">120 / 120 required ballots submitted</p>
+            <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-lg backdrop-blur-xl space-y-1.5 hover:border-teal-500/40 transition-all">
+              <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">SCORING PROGRESS</span>
+              <div className="text-3xl font-black text-teal-400 font-mono tracking-tight">
+                {realStats?.telemetry?.assignedBallots > 0 ? `${realStats?.telemetry?.reviewCompletionPercentage ?? 0}%` : '0%'}
+              </div>
+              <p className="text-xs text-slate-300">
+                {realStats?.telemetry?.assignedBallots > 0
+                  ? `${realStats?.telemetry?.ballotsSubmitted || 0} / ${realStats.telemetry.assignedBallots} required ballots submitted`
+                  : '0 ballots assigned • Build phase'}
+              </p>
             </div>
-            <div className="glass-card p-4 rounded-xl space-y-1">
-              <span className="text-[10px] font-mono text-gray-400">JUDGES ONLINE</span>
-              <div className="text-2xl font-black text-brand-violet font-mono">30 / 30</div>
-              <p className="text-[11px] text-gray-400">Judges agreed on 3 practice sets</p>
+            <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-lg backdrop-blur-xl space-y-1.5 hover:border-purple-500/40 transition-all">
+              <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">JUDGES ONLINE</span>
+              <div className="text-3xl font-black text-purple-400 font-mono tracking-tight">
+                {realStats?.telemetry?.judgesOnline ?? 0}
+              </div>
+              <p className="text-xs text-slate-300">
+                {(realStats?.telemetry?.judgesOnline ?? 0) > 0
+                  ? `${realStats.telemetry.judgesOnline} active judges registered`
+                  : '0 judges online • Awaiting judge check-in'}
+              </p>
             </div>
-            <div className="glass-card p-4 rounded-xl space-y-1">
-              <span className="text-[10px] font-mono text-gray-400">SCORES THAT DISAGREE</span>
-              <div className="text-2xl font-black text-brand-amber font-mono">1 Cluster</div>
-              <p className="text-[11px] text-gray-400">σ = 2.4 exceeds 1.5 threshold</p>
+            <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-lg backdrop-blur-xl space-y-1.5 hover:border-amber-500/40 transition-all">
+              <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">SCORES THAT DISAGREE</span>
+              <div className="text-3xl font-black text-amber-400 font-mono tracking-tight">
+                {realStats?.disputes?.length || 0} Cluster{realStats?.disputes?.length === 1 ? '' : 's'}
+              </div>
+              <p className="text-xs text-slate-300">
+                {realStats?.disputes?.length > 0 ? `${realStats.disputes.length} active dispute(s) detected` : '0 disputes • Consensus achieved'}
+              </p>
             </div>
           </div>
 
           {/* Main Grid: Disagreement Routing & Weight Sensitivity Simulator */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Disagreement & Targeted Review Dispatch (5 cols) */}
-            <div className="lg:col-span-5 glass-card p-5 rounded-xl space-y-4">
+            <div className="lg:col-span-5 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl backdrop-blur-xl space-y-4">
               <div className="flex items-center space-x-2">
-                <AlertTriangle className="w-4 h-4 text-brand-amber" />
-                <h2 className="font-bold text-sm text-gray-200">Where judges disagreed</h2>
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
+                <h2 className="font-bold text-base text-white">Where judges disagreed</h2>
               </div>
 
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 When primary ballots diverge significantly, the platform assigns a targeted 4th review instead of silently averaging disagreement.
               </p>
 
-              <div className="p-3.5 rounded-lg bg-dark-900/80 border border-brand-amber/30 space-y-2">
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="font-bold text-white">Project #1: Substratum Sync</span>
-                  <span className="text-brand-amber font-bold">σ = 2.4 (High Dispersion)</span>
+              {realStats?.disputes && realStats.disputes.length > 0 ? (
+                <div className="p-4 rounded-xl bg-slate-950 border border-amber-500/40 space-y-2.5 shadow-inner">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="font-bold text-white truncate">{realStats.disputes[0].projectTitle || 'Project Disagreement'}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-bold text-[10px] border border-amber-500/30">
+                      Δ = {realStats.disputes[0].delta || 1.8} (High Dispersion)
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {realStats.disputes[0].judgeA} vs. {realStats.disputes[0].judgeB}
+                  </p>
+
+                  <button
+                    onClick={handleTriggerDisagreement}
+                    disabled={disagreementDispatched}
+                    className={`w-full py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+                      disagreementDispatched
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        : 'bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md'
+                    }`}
+                  >
+                    {disagreementDispatched ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span>Asked calibrated judge for 4th opinion</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 text-slate-950" />
+                        <span>Ask for a 4th opinion</span>
+                      </>
+                    )}
+                  </button>
                 </div>
-                <p className="text-[11px] text-gray-300">
-                  Judge #1 scored 9.2 (High Depth), Judge #3 scored 4.4 (Skeptical on WASM bridge).
-                </p>
+              ) : (
+                <div className="p-5 rounded-xl bg-slate-950 border border-emerald-500/30 space-y-2 text-center py-6">
+                  <ShieldCheck className="w-8 h-8 text-emerald-400 mx-auto" />
+                  <p className="text-xs font-bold text-white font-mono">0 Inter-Judge Disagreements</p>
+                  <p className="text-[11px] text-slate-400">All live ballots are in mathematical consensus (σ &lt; 1.5) or no live disputes are currently open.</p>
+                </div>
+              )}
 
-                <button
-                  onClick={handleTriggerDisagreement}
-                  disabled={disagreementDispatched}
-                  className={`w-full py-2 rounded-lg text-xs font-mono font-bold transition-all flex items-center justify-center space-x-1.5 ${
-                    disagreementDispatched
-                      ? 'bg-brand-emerald/20 text-brand-emerald border border-brand-emerald/30'
-                      : 'bg-brand-amber text-dark-950 hover:opacity-90 shadow-sm'
-                  }`}
-                >
-                  {disagreementDispatched ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Asked Dr. Becker for a 4th opinion</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Ask for a 4th opinion</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <div className="text-[11px] font-mono text-gray-500 bg-dark-900/50 p-2.5 rounded border border-white/5">
-                <strong>Reason given:</strong> "High score dispersion (σ = 2.4 &gt; 1.5). Assigning calibrated neutral judge to resolve uncertainty without corrupting raw ballots."
+              <div className="text-xs font-mono text-slate-400 bg-slate-950/70 p-3 rounded-xl border border-slate-800 leading-relaxed">
+                <strong className="text-slate-300">Policy:</strong> "When score dispersion exceeds threshold (σ &gt; 1.5), DOGFOOD OS assigns calibrated neutral judge without corrupting raw ballots."
               </div>
             </div>
 
             {/* Weight Sensitivity Simulator (7 cols) */}
-            <div className="lg:col-span-7 glass-card p-5 rounded-xl space-y-4">
+            <div className="lg:col-span-7 p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl backdrop-blur-xl space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Sliders className="w-4 h-4 text-brand-teal" />
-                  <h2 className="font-bold text-sm text-gray-200">Try different score weights</h2>
+                  <Sliders className="w-5 h-5 text-teal-400" />
+                  <h2 className="font-bold text-base text-white">Try different score weights</h2>
                 </div>
-                <span className="text-[10px] font-mono text-brand-teal bg-brand-teal/10 px-2 py-0.5 rounded border border-brand-teal/20">
+                <span className="text-[10px] font-mono text-teal-300 bg-teal-500/10 px-2.5 py-1 rounded-full border border-teal-500/30 font-semibold">
                   NON-MUTATING SIMULATION
                 </span>
               </div>
 
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 Slide rubric criteria weights in this sandbox to preview rank movement and highlight fragile positions before locking publication.
               </p>
 
               {/* Sliders Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-                <div>
-                  <label className="block text-gray-400 mb-1">Depth: {weights.c1}%</label>
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                  <label className="block text-slate-300 mb-1 font-semibold">Depth: {weights.c1}%</label>
                   <input
                     type="range"
                     min="10"
                     max="60"
                     value={weights.c1}
                     onChange={(e) => handleWeightChange('c1', Number(e.target.value))}
-                    className="w-full accent-brand-teal"
+                    className="w-full accent-teal-400 cursor-pointer"
                   />
                 </div>
-                <div>
-                  <label className="block text-gray-400 mb-1">Align: {weights.c2}%</label>
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                  <label className="block text-slate-300 mb-1 font-semibold">Align: {weights.c2}%</label>
                   <input
                     type="range"
                     min="10"
                     max="60"
                     value={weights.c2}
                     onChange={(e) => handleWeightChange('c2', Number(e.target.value))}
-                    className="w-full accent-brand-teal"
+                    className="w-full accent-teal-400 cursor-pointer"
                   />
                 </div>
-                <div>
-                  <label className="block text-gray-400 mb-1">Novel: {weights.c3}%</label>
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                  <label className="block text-slate-300 mb-1 font-semibold">Novel: {weights.c3}%</label>
                   <input
                     type="range"
                     min="10"
                     max="60"
                     value={weights.c3}
                     onChange={(e) => handleWeightChange('c3', Number(e.target.value))}
-                    className="w-full accent-brand-teal"
+                    className="w-full accent-teal-400 cursor-pointer"
                   />
                 </div>
-                <div>
-                  <label className="block text-gray-400 mb-1">Evidence: {weights.c4}%</label>
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                  <label className="block text-slate-300 mb-1 font-semibold">Evidence: {weights.c4}%</label>
                   <input
                     type="range"
                     min="10"
                     max="60"
                     value={weights.c4}
                     onChange={(e) => handleWeightChange('c4', Number(e.target.value))}
-                    className="w-full accent-brand-teal"
+                    className="w-full accent-teal-400 cursor-pointer"
                   />
                 </div>
               </div>
 
               {/* Dynamic Rank Movement Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-dark-900 text-gray-400 border-b border-white/5">
-                    <tr>
-                      <th className="py-2 px-3">Event name</th>
-                      <th className="py-2 px-3">Starting place</th>
-                      <th className="py-2 px-3">Predicted place</th>
-                      <th className="py-2 px-3">Rank Delta (Δ)</th>
-                      <th className="py-2 px-3">How close it is</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {simulatedMovements.map((item, i) => (
-                      <tr key={i} className="hover:bg-white/5">
-                        <td className="py-2.5 px-3 font-medium text-white">{item.title}</td>
-                        <td className="py-2.5 px-3 text-gray-400">#{item.baseRank}</td>
-                        <td className="py-2.5 px-3 text-brand-teal font-bold">#{item.simulatedRank}</td>
-                        <td className="py-2.5 px-3">
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                            item.delta > 0
-                              ? 'bg-brand-emerald/10 text-brand-emerald'
-                              : item.delta < 0
-                              ? 'bg-brand-crimson/10 text-brand-crimson'
-                              : 'text-gray-500'
-                          }`}>
-                            {item.delta > 0 ? `+${item.delta}` : item.delta}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          {item.isFragile ? (
-                            <span className="text-[10px] text-brand-amber font-bold flex items-center space-x-1">
-                              <AlertTriangle className="w-3 h-3" />
-                              <span>Uncertain place</span>
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-gray-500">Settled</span>
-                          )}
-                        </td>
+              <div className="overflow-x-auto rounded-xl border border-slate-800">
+                {liveProjects.length > 0 ? (
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
+                      <tr>
+                        <th className="py-2.5 px-3 uppercase text-[10px] tracking-wider">Project title</th>
+                        <th className="py-2.5 px-3 uppercase text-[10px] tracking-wider">Starting place</th>
+                        <th className="py-2.5 px-3 uppercase text-[10px] tracking-wider">Predicted place</th>
+                        <th className="py-2.5 px-3 uppercase text-[10px] tracking-wider">Rank Delta (Δ)</th>
+                        <th className="py-2.5 px-3 uppercase text-[10px] tracking-wider">How close it is</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/80 bg-slate-900/60">
+                      {liveProjects.map((item, i) => (
+                        <tr key={i} className="hover:bg-slate-800/50 transition-colors">
+                          <td className="py-3 px-3 font-bold text-white">{item.title || item.name}</td>
+                          <td className="py-3 px-3 text-slate-400">#{item.rank || (i + 1)}</td>
+                          <td className="py-3 px-3 text-teal-400 font-bold">#{item.rank || (i + 1)}</td>
+                          <td className="py-3 px-3">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              0
+                            </span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className="text-[11px] text-slate-400">Settled</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="p-8 text-center bg-slate-950/60 rounded-xl space-y-2">
+                    <Cpu className="w-7 h-7 text-slate-600 mx-auto" />
+                    <p className="text-xs text-slate-300 font-mono font-bold">0 Projects in Live Database</p>
+                    <p className="text-[11px] text-slate-400">Database is running on clean live mode. Create a hackathon via <strong>Prompt-to-Hackathon ⚡</strong> or submit a project from <strong>/participant</strong>.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -516,19 +1103,19 @@ export default function OrganizerPage() {
         <div className="space-y-6">
           {/* Spike Alert Banner */}
           {isSpike && (
-            <div className="p-4 rounded-xl bg-brand-crimson/15 border border-brand-crimson/40 text-brand-crimson flex items-center justify-between font-mono animate-pulse shadow-lg">
+            <div className="p-4 rounded-2xl bg-red-500/15 border border-red-500/40 text-red-200 flex items-center justify-between font-mono animate-pulse shadow-lg">
               <div className="flex items-center space-x-3">
-                <AlertTriangle className="w-6 h-6 shrink-0 text-brand-crimson" />
+                <AlertTriangle className="w-6 h-6 shrink-0 text-red-400" />
                 <div>
-                  <h3 className="font-extrabold text-sm tracking-tight">
+                  <h3 className="font-extrabold text-sm tracking-tight text-white">
                     SUPPORT SPIKE DETECTED — {openTicketsCount} TICKETS IN LAST 15 MINUTES
                   </h3>
-                  <p className="text-xs opacity-90">
+                  <p className="text-xs text-red-200/90">
                     High volume of submission failures detected near deadline boundary. Organizers alerted via MailHog.
                   </p>
                 </div>
               </div>
-              <span className="px-3 py-1 rounded bg-brand-crimson text-white text-xs font-bold shrink-0">
+              <span className="px-3 py-1 rounded-xl bg-red-500 text-white text-xs font-bold shrink-0">
                 CRITICAL ALERT
               </span>
             </div>
@@ -539,56 +1126,56 @@ export default function OrganizerPage() {
             {supportTickets.map((ticket) => (
               <div
                 key={ticket.id}
-                className={`glass-card p-5 rounded-xl border transition-all ${
+                className={`p-5 rounded-2xl border transition-all ${
                   ticket.status === 'RESOLVED'
-                    ? 'opacity-60 border-white/5'
+                    ? 'opacity-60 border-slate-800 bg-slate-900/50'
                     : ticket.priority === 'URGENT'
-                    ? 'border-brand-crimson/40 bg-dark-900/90 shadow-md'
+                    ? 'border-red-500/40 bg-slate-900/95 shadow-md shadow-red-950/30'
                     : ticket.priority === 'HIGH'
-                    ? 'border-brand-amber/30 bg-dark-900/80'
-                    : 'border-white/10'
+                    ? 'border-amber-500/40 bg-slate-900/95'
+                    : 'border-slate-800 bg-slate-900/90'
                 }`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
                   <div className="flex items-center space-x-2">
                     <span className="text-xs font-bold text-white">{ticket.ref}</span>
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                         ticket.priority === 'URGENT'
-                          ? 'bg-brand-crimson/20 text-brand-crimson border border-brand-crimson/40'
+                          ? 'bg-red-500/20 text-red-300 border border-red-500/40'
                           : ticket.priority === 'HIGH'
-                          ? 'bg-brand-amber/20 text-brand-amber border border-brand-amber/40'
-                          : 'bg-dark-850 text-gray-400 border border-white/10'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                          : 'bg-slate-800 text-slate-400 border border-slate-700'
                       }`}
                     >
                       {ticket.priority}
                     </span>
 
                     {ticket.deadlineBoost && (
-                      <span className="px-2 py-0.5 rounded text-[10px] bg-brand-violet/20 text-brand-violet border border-brand-violet/30 flex items-center space-x-1">
+                      <span className="px-2 py-0.5 rounded text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center space-x-1 font-bold">
                         <Pin className="w-3 h-3" />
                         <span>DEADLINE</span>
                       </span>
                     )}
 
-                    <span className="text-[10px] text-gray-400">from {ticket.reporterRole} ({ticket.reporterEmail})</span>
+                    <span className="text-[11px] text-slate-400">from {ticket.reporterRole} ({ticket.reporterEmail})</span>
                   </div>
 
                   <div className="flex items-center space-x-3 text-xs">
-                    <span className="text-gray-400 flex items-center space-x-1 text-[11px]">
-                      <Clock className="w-3.5 h-3.5 text-gray-500" />
+                    <span className="text-slate-400 flex items-center space-x-1 text-[11px]">
+                      <Clock className="w-3.5 h-3.5 text-slate-500" />
                       <span>Open {ticket.openMinutes}m</span>
                     </span>
 
                     {ticket.status === 'RESOLVED' ? (
-                      <span className="px-2 py-0.5 rounded bg-brand-emerald/10 text-brand-emerald text-xs font-bold flex items-center space-x-1">
-                        <Check className="w-3.5 h-3.5" />
+                      <span className="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 text-xs font-bold flex items-center space-x-1">
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
                         <span>RESOLVED</span>
                       </span>
                     ) : (
                       <button
                         onClick={() => handleResolveTicket(ticket.id)}
-                        className="px-3 py-1 rounded bg-brand-emerald text-dark-950 text-xs font-bold hover:opacity-90 shadow-sm"
+                        className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold shadow-sm transition-colors cursor-pointer"
                       >
                         Resolve Ticket
                       </button>
@@ -597,16 +1184,16 @@ export default function OrganizerPage() {
                 </div>
 
                 <div className="pt-3 space-y-2">
-                  <p className="text-xs text-gray-200 leading-relaxed">{ticket.message}</p>
+                  <p className="text-xs text-slate-200 leading-relaxed font-sans">{ticket.message}</p>
 
-                  <div className="flex flex-wrap items-center gap-3 pt-2 text-[10px] text-gray-400">
-                    <span>Sent to: <strong className="text-brand-teal">{ticket.page}</strong></span>
-                    <span>Round: <strong className="text-gray-200">{ticket.eventRound}</strong></span>
-                    <span>UA: <span className="text-gray-500 truncate max-w-xs">{ticket.userAgent}</span></span>
+                  <div className="flex flex-wrap items-center gap-3 pt-2 text-[10px] text-slate-400">
+                    <span>Sent to: <strong className="text-teal-400 font-mono">{ticket.page}</strong></span>
+                    <span>Round: <strong className="text-slate-200">{ticket.eventRound}</strong></span>
+                    <span>UA: <span className="text-slate-500 truncate max-w-xs">{ticket.userAgent}</span></span>
                     {ticket.hasScreenshot && (
-                      <span className="text-brand-cyan flex items-center space-x-1">
+                      <span className="text-cyan-400 flex items-center space-x-1 font-semibold">
                         <ImageIcon className="w-3 h-3" />
-                        <span>Screenshot added</span>
+                        <span>Screenshot attached</span>
                       </span>
                     )}
                   </div>
@@ -620,72 +1207,72 @@ export default function OrganizerPage() {
       {/* TAB 3: AUDIENCE & GOOGLE SHEETS */}
       {activeTab === 'AUDIENCE' && (
         <div className="space-y-6">
-          <div className="glass-card p-6 rounded-xl space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
+          <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl backdrop-blur-xl space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
               <div>
                 <h2 className="text-lg font-bold text-white flex items-center space-x-2">
-                  <FileSpreadsheet className="w-5 h-5 text-brand-emerald" />
+                  <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
                   <span>Participant Audience & Google Sheets Export</span>
                 </h2>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-slate-300 mt-1">
                   One-click export of verified attendees. Directly importable into Google Sheets for organizer ops.
                 </p>
               </div>
 
               <button
                 onClick={handleDownloadCsv}
-                className="px-4 py-2.5 rounded-lg bg-gradient-to-r from-brand-emerald to-brand-teal text-dark-950 font-mono text-xs font-bold shadow-lg hover:opacity-90 transition-opacity flex items-center space-x-2 shrink-0"
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-mono text-xs font-bold shadow-lg hover:scale-[1.02] transition-all flex items-center space-x-2 shrink-0 cursor-pointer"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-4 h-4 text-slate-950" />
                 <span>Download as a spreadsheet</span>
               </button>
             </div>
 
             {/* Audience Table Preview */}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-slate-800">
               <table className="w-full text-left text-xs font-mono">
-                <thead className="bg-dark-900 text-gray-400 border-b border-white/5">
+                <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
                   <tr>
-                    <th className="py-2.5 px-3">Name</th>
-                    <th className="py-2.5 px-3">Email</th>
-                    <th className="py-2.5 px-3">Role</th>
-                    <th className="py-2.5 px-3">Team</th>
-                    <th className="py-2.5 px-3">Track</th>
-                    <th className="py-2.5 px-3">Also send me future event invites</th>
+                    <th className="py-2.5 px-3 uppercase text-[10px] tracking-wider">Name</th>
+                    <th className="py-2.5 px-3 uppercase text-[10px] tracking-wider">Email</th>
+                    <th className="py-2.5 px-3 uppercase text-[10px] tracking-wider">Role</th>
+                    <th className="py-2.5 px-3 uppercase text-[10px] tracking-wider">Team</th>
+                    <th className="py-2.5 px-3 uppercase text-[10px] tracking-wider">Track</th>
+                    <th className="py-2.5 px-3 uppercase text-[10px] tracking-wider">Opt-In Future</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
-                  <tr className="hover:bg-white/5">
-                    <td className="py-2.5 px-3 font-semibold text-white">Elena Rostova</td>
-                    <td className="py-2.5 px-3 text-gray-300">organizer@dogfood.local</td>
-                    <td className="py-2.5 px-3 text-brand-amber">ORGANIZER</td>
-                    <td className="py-2.5 px-3 text-gray-400">Operations</td>
-                    <td className="py-2.5 px-3 text-gray-400">All</td>
-                    <td className="py-2.5 px-3"><span className="px-1.5 py-0.5 rounded bg-brand-emerald/10 text-brand-emerald font-bold">YES</span></td>
+                <tbody className="divide-y divide-slate-800/80 bg-slate-900/60">
+                  <tr className="hover:bg-slate-800/50 transition-colors">
+                    <td className="py-3 px-3 font-bold text-white">Elena Rostova</td>
+                    <td className="py-3 px-3 text-slate-300">organizer@dogfood.local</td>
+                    <td className="py-3 px-3 text-amber-400 font-bold">ORGANIZER</td>
+                    <td className="py-3 px-3 text-slate-300">Operations</td>
+                    <td className="py-3 px-3 text-slate-400">All</td>
+                    <td className="py-3 px-3"><span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">YES</span></td>
                   </tr>
-                  <tr className="hover:bg-white/5">
-                    <td className="py-2.5 px-3 font-semibold text-white">Developer 1</td>
-                    <td className="py-2.5 px-3 text-gray-300">team1.leader@dogfood.local</td>
-                    <td className="py-2.5 px-3 text-brand-violet">PARTICIPANT</td>
-                    <td className="py-2.5 px-3 text-gray-200">Team Substratum</td>
-                    <td className="py-2.5 px-3 text-gray-400">Verifiable Systems</td>
-                    <td className="py-2.5 px-3"><span className="px-1.5 py-0.5 rounded bg-brand-emerald/10 text-brand-emerald font-bold">YES</span></td>
+                  <tr className="hover:bg-slate-800/50 transition-colors">
+                    <td className="py-3 px-3 font-bold text-white">Developer 1</td>
+                    <td className="py-3 px-3 text-slate-300">team1.leader@dogfood.local</td>
+                    <td className="py-3 px-3 text-purple-400 font-bold">PARTICIPANT</td>
+                    <td className="py-3 px-3 text-slate-200">Team Substratum</td>
+                    <td className="py-3 px-3 text-slate-400">Verifiable Systems</td>
+                    <td className="py-3 px-3"><span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">YES</span></td>
                   </tr>
-                  <tr className="hover:bg-white/5">
-                    <td className="py-2.5 px-3 font-semibold text-white">Developer 2</td>
-                    <td className="py-2.5 px-3 text-gray-300">team2.leader@dogfood.local</td>
-                    <td className="py-2.5 px-3 text-brand-violet">PARTICIPANT</td>
-                    <td className="py-2.5 px-3 text-gray-200">Team Kestrel</td>
-                    <td className="py-2.5 px-3 text-gray-400">Autonomous Agents</td>
-                    <td className="py-2.5 px-3"><span className="px-1.5 py-0.5 rounded bg-brand-emerald/10 text-brand-emerald font-bold">YES</span></td>
+                  <tr className="hover:bg-slate-800/50 transition-colors">
+                    <td className="py-3 px-3 font-bold text-white">Developer 2</td>
+                    <td className="py-3 px-3 text-slate-300">team2.leader@dogfood.local</td>
+                    <td className="py-3 px-3 text-purple-400 font-bold">PARTICIPANT</td>
+                    <td className="py-3 px-3 text-slate-200">Team Kestrel</td>
+                    <td className="py-3 px-3 text-slate-400">Autonomous Agents</td>
+                    <td className="py-3 px-3"><span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">YES</span></td>
                   </tr>
-                  <tr className="hover:bg-white/5">
-                    <td className="py-2.5 px-3 font-semibold text-white">Developer 3</td>
-                    <td className="py-2.5 px-3 text-gray-300">team3.leader@dogfood.local</td>
-                    <td className="py-2.5 px-3 text-brand-violet">PARTICIPANT</td>
-                    <td className="py-2.5 px-3 text-gray-200">Team Chronos</td>
-                    <td className="py-2.5 px-3 text-gray-400">Verifiable Systems</td>
-                    <td className="py-2.5 px-3"><span className="px-1.5 py-0.5 rounded bg-dark-850 text-gray-500">NO</span></td>
+                  <tr className="hover:bg-slate-800/50 transition-colors">
+                    <td className="py-3 px-3 font-bold text-white">Developer 3</td>
+                    <td className="py-3 px-3 text-slate-300">team3.leader@dogfood.local</td>
+                    <td className="py-3 px-3 text-purple-400 font-bold">PARTICIPANT</td>
+                    <td className="py-3 px-3 text-slate-200">Team Chronos</td>
+                    <td className="py-3 px-3 text-slate-400">Verifiable Systems</td>
+                    <td className="py-3 px-3"><span className="px-2 py-0.5 rounded bg-slate-800 text-slate-500">NO</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -693,63 +1280,63 @@ export default function OrganizerPage() {
           </div>
 
           {/* Announcement Broadcast Card */}
-          <div className="glass-card p-6 rounded-xl space-y-4 font-mono text-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-white/5">
+          <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl backdrop-blur-xl space-y-4 font-mono text-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center space-x-2">
-                <Mail className="w-4 h-4 text-brand-teal" />
-                <h3 className="font-bold text-sm text-white">Send to everyone who opted in</h3>
+                <Mail className="w-4 h-4 text-teal-400" />
+                <h3 className="font-bold text-sm text-white">Send broadcast to opted-in attendees</h3>
               </div>
-              <span className="text-gray-400 text-[11px]">
-                Targeting: <strong className="text-brand-teal">34 Opted-In Attendees</strong>
+              <span className="text-slate-400 text-[11px]">
+                Targeting: <strong className="text-teal-400">34 Opted-In Attendees</strong>
               </span>
             </div>
 
-            <p className="text-gray-400 text-[11px]">
+            <p className="text-slate-300 text-xs leading-relaxed font-sans">
               Strict Privacy Enforcement: Announcements are only dispatched to attendees who explicitly opted in. Every email includes a one-click unsubscribe link.
             </p>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-gray-300 mb-1">Subject</label>
+                <label className="block text-slate-300 mb-1 font-semibold">Subject</label>
                 <input
                   type="text"
                   value={broadcastSubject}
                   onChange={(e) => setBroadcastSubject(e.target.value)}
-                  className="w-full px-3 py-2 bg-dark-900 border border-white/10 rounded-lg text-gray-200 focus:outline-none focus:border-brand-teal"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-400"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-300 mb-1">Message</label>
+                <label className="block text-slate-300 mb-1 font-semibold">Message</label>
                 <textarea
                   rows={3}
                   value={broadcastMessage}
                   onChange={(e) => setBroadcastMessage(e.target.value)}
-                  className="w-full px-3 py-2 bg-dark-900 border border-white/10 rounded-lg text-gray-200 focus:outline-none focus:border-brand-teal"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-400 resize-none"
                 />
               </div>
 
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-[10px] text-gray-500">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2">
+                <span className="text-[11px] text-slate-500">
                   Dispatches via MailHog locally (localhost:8025) or production SMTP.
                 </span>
 
                 <button
                   onClick={handleSendBroadcast}
-                  className={`px-4 py-2 rounded-lg font-bold text-xs transition-all flex items-center space-x-2 ${
+                  className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center space-x-2 cursor-pointer ${
                     broadcastSent
-                      ? 'bg-brand-emerald text-dark-950'
-                      : 'bg-brand-teal text-dark-950 hover:opacity-90 shadow-md'
+                      ? 'bg-emerald-400 text-slate-950 shadow-md'
+                      : 'bg-teal-400 hover:bg-teal-300 text-slate-950 shadow-md'
                   }`}
                 >
                   {broadcastSent ? (
                     <>
-                      <CheckCircle2 className="w-4 h-4" />
+                      <CheckCircle2 className="w-4 h-4 text-slate-950" />
                       <span>Message sent!</span>
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4" />
+                      <Send className="w-4 h-4 text-slate-950" />
                       <span>Send the message</span>
                     </>
                   )}
@@ -1014,6 +1601,16 @@ export default function OrganizerPage() {
           )}
         </div>
       )}
+
+      {/* Global Create Hackathon Modal */}
+      <CreateHackathonModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onCreated={(blueprint) => {
+          setSynthesizedBlueprint(blueprint);
+          setActiveTab('PROMPT_ORCHESTRATOR');
+        }}
+      />
     </div>
   );
 }

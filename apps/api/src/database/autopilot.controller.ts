@@ -1,6 +1,10 @@
-import { Controller, Post, Body, Get, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body, Get, BadRequestException, NotFoundException, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { MongoService } from './mongo.service';
+import { AuthGuard } from '../common/guards/auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { Role } from '../common/types';
 
 export interface SynthesizePromptDto {
   prompt: string;
@@ -9,6 +13,7 @@ export interface SynthesizePromptDto {
 
 @ApiTags('Autonomous Hackathon Orchestrator')
 @Controller('autopilot')
+@UseGuards(AuthGuard, RolesGuard)
 export class AutopilotController {
   constructor(private readonly mongoService: MongoService) {}
 
@@ -44,6 +49,7 @@ export class AutopilotController {
   }
 
   @Post('synthesize')
+  @Roles(Role.ORGANIZER, Role.ADMIN)
   @ApiOperation({ summary: 'Autonomous Prompt-to-Hackathon: Synthesize complete event, tracks, rubric, anchors, and manifest from a single prompt' })
   async synthesizeHackathon(@Body() body: SynthesizePromptDto) {
     if (!body || !body.prompt || body.prompt.trim().length < 8) {
@@ -62,6 +68,7 @@ export class AutopilotController {
   }
 
   @Post('apply')
+  @Roles(Role.ORGANIZER, Role.ADMIN)
   @ApiOperation({ summary: 'Apply a synthesized hackathon blueprint directly into MongoDB cluster' })
   async applyBlueprint(@Body() blueprint: any) {
     if (!blueprint || !blueprint.event || !blueprint.tracks) {
@@ -388,11 +395,12 @@ scale = [1, 5]
     }
 
     // 1. Update active event in MongoDB
-    const eventId = 'b8a16308-26a2-4d42-86f7-77e0f2a6f01f';
+    const eventId = blueprint.event?.id || 'b8a16308-26a2-4d42-86f7-77e0f2a6f01f';
     await db.collection('events').updateOne(
       { id: eventId },
       {
         $set: {
+          id: eventId,
           name: blueprint.event.name,
           slug: blueprint.event.slug,
           domain: blueprint.event.domain,
@@ -401,67 +409,50 @@ scale = [1, 5]
           prizeTotal: blueprint.event.prizeTotal,
           tracks: blueprint.tracks,
           rubric: blueprint.rubric,
+          status: 'REGISTRATION_OPEN',
           updatedAt: new Date().toISOString(),
         },
       },
       { upsert: true }
     );
 
-    // 2. Clear old demo projects and seed newly tailored projects
+    // 2. Clear old demo projects, ballots, and disputes for a clean authentic hackathon
     await db.collection('projects').deleteMany({});
-    const projectsToInsert = (blueprint.seedProjects || []).map((p: any, idx: number) => ({
-      id: `proj-${idx + 1 < 10 ? '0' + (idx + 1) : idx + 1}`,
-      title: p.title,
-      tagline: p.tagline,
-      track: p.track,
-      rank: p.rank || idx + 1,
-      elo: p.elo || 90.0,
-      eloShift: `+${Math.floor(Math.random() * 8 + 4)}`,
-      meanScore: p.meanScore || 4.5,
-      repoUrl: `https://github.com/dogfood-teams/${p.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-      commitSha: Math.random().toString(16).substring(2, 18),
-      teamMembers: p.teamMembers || ['Lead Developer', 'Systems Engineer'],
-      criteriaScores: { depth: 85, novelty: 80, feasibility: 88, presentation: 82 },
-      updatedAt: new Date().toISOString(),
-    }));
-
-    if (projectsToInsert.length > 0) {
-      await db.collection('projects').insertMany(projectsToInsert);
-    }
-
-    // 3. Clear and seed fresh initial ballots
     await db.collection('ballots').deleteMany({});
-    const ballotsToInsert = projectsToInsert.flatMap((p: any, pIdx: number) => [
-      {
-        id: `BLT-${2000 + pIdx * 2 + 1}`,
-        projectId: p.id,
-        judgeId: 'jury-alpha',
-        score: p.meanScore,
-        status: 'LOCKED',
-        signatureSha256: `0x${Math.random().toString(16).substring(2, 32)}`,
-        notes: 'Initial peer-blind calibration review executed.',
-        submittedAt: new Date().toISOString(),
-      },
-      {
-        id: `BLT-${2000 + pIdx * 2 + 2}`,
-        projectId: p.id,
-        judgeId: 'jury-beta',
-        score: Number((p.meanScore - 0.1).toFixed(2)),
-        status: 'LOCKED',
-        signatureSha256: `0x${Math.random().toString(16).substring(2, 32)}`,
-        notes: 'Independent blind verification ballot recorded.',
-        submittedAt: new Date().toISOString(),
-      },
-    ]);
+    await db.collection('disputes').deleteMany({});
 
-    if (ballotsToInsert.length > 0) {
-      await db.collection('ballots').insertMany(ballotsToInsert);
+    // Only seed mock projects if explicitly requested by blueprint.seedDemo
+    let projectsCount = 0;
+    let ballotsCount = 0;
+
+    if (blueprint.seedDemo && Array.isArray(blueprint.seedProjects) && blueprint.seedProjects.length > 0) {
+      const projectsToInsert = blueprint.seedProjects.map((p: any, idx: number) => ({
+        id: `proj-${idx + 1 < 10 ? '0' + (idx + 1) : idx + 1}`,
+        title: p.title,
+        tagline: p.tagline,
+        track: p.track,
+        rank: p.rank || idx + 1,
+        elo: p.elo || 90.0,
+        eloShift: `+${Math.floor(Math.random() * 8 + 4)}`,
+        meanScore: p.meanScore || 4.5,
+        repoUrl: `https://github.com/dogfood-teams/${p.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+        commitSha: Math.random().toString(16).substring(2, 18),
+        teamMembers: p.teamMembers || ['Lead Developer', 'Systems Engineer'],
+        criteriaScores: { depth: 85, novelty: 80, feasibility: 88, presentation: 82 },
+        updatedAt: new Date().toISOString(),
+      }));
+
+      await db.collection('projects').insertMany(projectsToInsert);
+      projectsCount = projectsToInsert.length;
     }
 
     return {
       eventId,
-      projectCount: projectsToInsert.length,
-      ballotCount: ballotsToInsert.length,
+      eventName: blueprint.event?.name,
+      slug: blueprint.event?.slug,
+      tracks: blueprint.tracks,
+      projectCount: projectsCount,
+      ballotCount: ballotsCount,
     };
   }
 }

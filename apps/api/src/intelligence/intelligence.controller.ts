@@ -21,13 +21,13 @@ export class IntelligenceController {
 
   @Get(':id')
   @Roles(Role.PARTICIPANT, Role.ORGANIZER, Role.ADMIN)
-  async getReport(@Param('id') id: string) {
-    return this.intelligenceService.getReport(id);
+  async getReport(@Param('eventId') eventId: string, @Param('id') id: string) {
+    return this.intelligenceService.getReport(id, eventId);
   }
 
   @Delete(':id')
   @Roles(Role.PARTICIPANT, Role.ORGANIZER, Role.ADMIN)
-  async deleteReport(@Param('id') id: string) {
-    return this.intelligenceService.deleteReport(id);
+  async deleteReport(@Param('eventId') eventId: string, @Param('id') id: string) {
+    return this.intelligenceService.deleteReport(id, eventId);
   }
 }

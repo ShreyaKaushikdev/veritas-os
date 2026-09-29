@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 
 @Injectable()
@@ -15,6 +15,7 @@ export class IntelligenceService {
     teamHours: number;
     teamSkills?: string[];
   }) {
+    // ✅ FIX #4: Data Isolation - Verify event exists
     const event = await this.prisma.event.findUnique({
       where: { id: data.eventId },
       include: {
@@ -27,6 +28,17 @@ export class IntelligenceService {
     });
 
     if (!event) throw new NotFoundException('Event not found');
+    
+    // ✅ FIX #4: Data Isolation - If projectId provided, verify it belongs to this event
+    if (data.projectId) {
+      const project = await this.prisma.project.findUnique({
+        where: { id: data.projectId }
+      });
+      if (!project || project.eventId !== data.eventId) {
+        throw new ForbiddenException('Project does not belong to this event');
+      }
+    }
+
     const rubric = event.rubrics[0];
     const criteriaList = (rubric && rubric.criteria && rubric.criteria.length > 0)
       ? rubric.criteria
@@ -172,9 +184,17 @@ export class IntelligenceService {
     };
   }
 
-  async getReport(reportId: string) {
-    const report = await this.prisma.ideaReport.findUnique({ where: { id: reportId } });
+  async getReport(reportId: string, eventId: string) {
+    // ✅ FIX #4: Data Isolation - Verify report belongs to this event
+    const report = await this.prisma.ideaReport.findUnique({ 
+      where: { id: reportId } 
+    });
     if (!report) throw new NotFoundException('Report not found');
+    
+    if (report.eventId !== eventId) {
+      throw new ForbiddenException('Report does not belong to this event');
+    }
+
     return {
       ...report,
       blindSpots: JSON.parse(report.blindSpots || '[]'),
@@ -183,7 +203,17 @@ export class IntelligenceService {
     };
   }
 
-  async deleteReport(reportId: string) {
+  async deleteReport(reportId: string, eventId: string) {
+    // ✅ FIX #4: Data Isolation - Verify report belongs to this event before deletion
+    const report = await this.prisma.ideaReport.findUnique({
+      where: { id: reportId }
+    });
+    if (!report) throw new NotFoundException('Report not found');
+    
+    if (report.eventId !== eventId) {
+      throw new ForbiddenException('Report does not belong to this event');
+    }
+
     await this.prisma.ideaReport.delete({ where: { id: reportId } });
     return { success: true };
   }

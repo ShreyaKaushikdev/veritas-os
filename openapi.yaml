@@ -286,6 +286,20 @@ paths:
       responses:
         '201':
           description: ''
+  /api/v1/auth/verify-otp:
+    post:
+      operationId: AuthController_verifyOTP
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/auth/resend-otp:
+    post:
+      operationId: AuthController_resendOTP
+      parameters: []
+      responses:
+        '201':
+          description: ''
   /api/v1/auth/login:
     post:
       operationId: AuthController_login
@@ -299,6 +313,20 @@ paths:
       parameters: []
       responses:
         '201':
+          description: ''
+  /api/v1/auth/google/login:
+    get:
+      operationId: AuthController_googleAuth
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  /api/v1/auth/google/callback:
+    get:
+      operationId: AuthController_googleAuthRedirect
+      parameters: []
+      responses:
+        '200':
           description: ''
   /api/v1/auth/logout:
     post:
@@ -344,6 +372,13 @@ paths:
       responses:
         '200':
           description: ''
+  /api/v1/events/generate-from-prompt:
+    post:
+      operationId: EventsController_generateFromPrompt
+      parameters: []
+      responses:
+        '201':
+          description: ''
   /api/v1/events/{id}/status:
     post:
       operationId: EventsController_updateStatus
@@ -383,6 +418,30 @@ paths:
   /api/v1/events/{id}/command-center:
     get:
       operationId: EventsController_getCommandCenter
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{id}/participants:
+    get:
+      operationId: EventsController_getParticipants
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/events/{id}/projects:
+    get:
+      operationId: EventsController_getProjects
       parameters:
         - name: id
           required: true
@@ -801,6 +860,11 @@ paths:
     get:
       operationId: IntelligenceController_getReport
       parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
         - name: id
           required: true
           in: path
@@ -812,6 +876,11 @@ paths:
     delete:
       operationId: IntelligenceController_deleteReport
       parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
         - name: id
           required: true
           in: path
@@ -936,6 +1005,629 @@ paths:
       operationId: ChatController_postMessage
       parameters:
         - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/participant-automation/events/{eventId}/analyze-idea:
+    post:
+      operationId: ParticipantAutomationController_analyzeIdea
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/participant-automation/events/{eventId}/projects/{projectId}/idea-history:
+    get:
+      operationId: ParticipantAutomationController_getIdeaAnalysisHistory
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: projectId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/participant-automation/projects/{projectId}/validate:
+    post:
+      operationId: ParticipantAutomationController_validateProject
+      parameters:
+        - name: projectId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/participant-automation/projects/{projectId}/pre-flight-check:
+    post:
+      operationId: ParticipantAutomationController_preFlightCheck
+      parameters:
+        - name: projectId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/participant-automation/projects/{projectId}/versions:
+    get:
+      operationId: ParticipantAutomationController_getProjectVersions
+      parameters:
+        - name: projectId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/participant-automation/projects/{projectId}/versions/snapshot:
+    post:
+      operationId: ParticipantAutomationController_createSnapshot
+      parameters:
+        - name: projectId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/participant-automation/projects/{projectId}/versions/{versionId}/restore:
+    post:
+      operationId: ParticipantAutomationController_restoreVersion
+      parameters:
+        - name: projectId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: versionId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/participant-automation/teams/{teamId}/activity-digest:
+    get:
+      operationId: ParticipantAutomationController_getTeamActivityDigest
+      parameters:
+        - name: teamId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: days
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/participant-automation/teams/{teamId}/collaboration-insights:
+    get:
+      operationId: ParticipantAutomationController_getCollaborationInsights
+      parameters:
+        - name: teamId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/participant-automation/events/{eventId}/team-recommendations:
+    get:
+      operationId: ParticipantAutomationController_getTeamRecommendations
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/participant-automation/users/{userId}/skills-profile:
+    post:
+      operationId: ParticipantAutomationController_updateSkillsProfile
+      parameters:
+        - name: userId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/participant-automation/events/{eventId}/deadlines:
+    get:
+      operationId: ParticipantAutomationController_getUpcomingDeadlines
+      parameters:
+        - name: eventId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/participant-automation/users/{userId}/notification-preferences:
+    post:
+      operationId: ParticipantAutomationController_updateNotificationPreferences
+      parameters:
+        - name: userId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/participant-automation/projects/{projectId}/submission-receipt:
+    get:
+      operationId: ParticipantAutomationController_getSubmissionReceipt
+      parameters:
+        - name: projectId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/participant-automation/projects/{projectId}/submission-receipt/pdf:
+    get:
+      operationId: ParticipantAutomationController_downloadReceiptPDF
+      parameters:
+        - name: projectId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/participant-automation/projects/{projectId}/blindspot-scan:
+    post:
+      operationId: ParticipantAutomationController_scanForBlindspots
+      parameters:
+        - name: projectId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/participant-automation/users/{userId}/dashboard:
+    get:
+      operationId: ParticipantAutomationController_getParticipantDashboard
+      parameters:
+        - name: userId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/participant-automation/webhooks/slack:
+    post:
+      operationId: ParticipantAutomationController_handleSlackWebhook
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/participant-automation/webhooks/discord:
+    post:
+      operationId: ParticipantAutomationController_handleDiscordWebhook
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/participant-automation/test-sms:
+    post:
+      operationId: ParticipantAutomationController_sendTestSMS
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/participant-automation/users/{userId}/sms-preferences:
+    post:
+      operationId: ParticipantAutomationController_updateSMSPreferences
+      parameters:
+        - name: userId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/leadstream/templates:
+    get:
+      operationId: LeadstreamController_getTemplates
+      parameters:
+        - name: eventId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+    post:
+      operationId: LeadstreamController_createTemplate
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/leadstream/templates/{id}:
+    get:
+      operationId: LeadstreamController_getTemplate
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+    put:
+      operationId: LeadstreamController_updateTemplate
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+    delete:
+      operationId: LeadstreamController_deleteTemplate
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/leadstream/templates/{id}/preview:
+    post:
+      operationId: LeadstreamController_previewTemplate
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/leadstream/lists:
+    get:
+      operationId: LeadstreamController_getLists
+      parameters:
+        - name: eventId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+    post:
+      operationId: LeadstreamController_createList
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/leadstream/lists/{id}/recipients:
+    post:
+      operationId: LeadstreamController_addRecipientsToList
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+    get:
+      operationId: LeadstreamController_getListRecipients
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: page
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/leadstream/lists/{id}/import-csv:
+    post:
+      operationId: LeadstreamController_importCSV
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/leadstream/lists/{id}:
+    delete:
+      operationId: LeadstreamController_deleteList
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/leadstream/campaigns:
+    get:
+      operationId: LeadstreamController_getCampaigns
+      parameters:
+        - name: eventId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+    post:
+      operationId: LeadstreamController_createCampaign
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/leadstream/campaigns/{id}:
+    get:
+      operationId: LeadstreamController_getCampaign
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+    delete:
+      operationId: LeadstreamController_deleteCampaign
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/leadstream/campaigns/{id}/send:
+    post:
+      operationId: LeadstreamController_sendCampaign
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/leadstream/campaigns/{id}/schedule:
+    post:
+      operationId: LeadstreamController_scheduleCampaign
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/leadstream/campaigns/{id}/cancel:
+    post:
+      operationId: LeadstreamController_cancelCampaign
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/leadstream/campaigns/{id}/stats:
+    get:
+      operationId: LeadstreamController_getCampaignStats
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/leadstream/send-bulk:
+    post:
+      operationId: LeadstreamController_sendBulkEmail
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/leadstream/send-to-group:
+    post:
+      operationId: LeadstreamController_sendToGroup
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /api/v1/leadstream/tracking/opens/{trackingId}:
+    get:
+      operationId: LeadstreamController_trackOpen
+      parameters:
+        - name: trackingId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/leadstream/tracking/clicks/{trackingId}:
+    get:
+      operationId: LeadstreamController_trackClick
+      parameters:
+        - name: trackingId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: url
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/leadstream/analytics/overview:
+    get:
+      operationId: LeadstreamController_getAnalyticsOverview
+      parameters:
+        - name: eventId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/leadstream/analytics/engagement:
+    get:
+      operationId: LeadstreamController_getEngagementMetrics
+      parameters:
+        - name: eventId
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: days
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/leadstream/analytics/campaigns/{id}/recipients:
+    get:
+      operationId: LeadstreamController_getCampaignRecipientDetails
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: status
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/leadstream/unsubscribe/{token}:
+    post:
+      operationId: LeadstreamController_unsubscribe
+      parameters:
+        - name: token
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /api/v1/leadstream/preferences/{token}:
+    get:
+      operationId: LeadstreamController_getEmailPreferences
+      parameters:
+        - name: token
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+    put:
+      operationId: LeadstreamController_updateEmailPreferences
+      parameters:
+        - name: token
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /api/v1/leadstream/template-library:
+    get:
+      operationId: LeadstreamController_getTemplateLibrary
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  /api/v1/leadstream/template-library/{id}/clone:
+    post:
+      operationId: LeadstreamController_cloneTemplateFromLibrary
+      parameters:
+        - name: id
           required: true
           in: path
           schema:

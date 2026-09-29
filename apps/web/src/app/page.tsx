@@ -1,1058 +1,736 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import {
-  Terminal,
-  ShieldCheck,
-  CheckCircle2,
-  Copy,
-  Check,
-  Play,
-  ArrowRight,
-  TrendingUp,
-  AlertTriangle,
+import { useRouter } from 'next/navigation';
+import { 
+  ArrowRight, 
+  Zap, 
+  Shield, 
+  Clock, 
+  BarChart3, 
+  Users, 
+  CheckCircle2, 
+  Award, 
+  GitBranch,
   Lock,
-  LockKeyhole,
-  Scale,
-  Brain,
+  Eye,
   Sparkles,
-  ExternalLink,
-  CheckCheck,
-  Fingerprint,
-  Zap,
-  Activity,
-  ShieldAlert,
-  Layers,
+  Terminal,
+  Play,
   ChevronRight,
+  Layers,
+  Target,
+  Brain,
+  Code2,
+  ExternalLink
 } from 'lucide-react';
-import DefensiblePodiumScene from '../components/3d/DefensiblePodiumScene';
-import { dashboard } from '@/lib/api';
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
+import AuthModal from '@/components/AuthModal';
 
-export default function HomePage() {
-  const [copiedCli, setCopiedCli] = useState(false);
-  const [copiedRootHash, setCopiedRootHash] = useState(false);
-  const [activeIdeaTrack, setActiveIdeaTrack] = useState<'ai' | 'zk' | 'infra'>('ai');
-  const [simulatedDuelVote, setSimulatedDuelVote] = useState<'alpha' | 'beta' | null>(null);
-  const [recusalSimulated, setRecusalSimulated] = useState(false);
-  const [recusalTimer, setRecusalTimer] = useState<number | null>(null);
-  const [liveStats, setLiveStats] = useState({
-    teams: 0,
-    ballots: 0,
-    health: 'HEALTHY',
-    latency: 38,
-  });
+const PotentialRadarScene = dynamic(() => import('@/components/3d/PotentialRadarScene'), { ssr: false });
 
-  // Live numbers at the top of the page. Fails quietly so the page still shows.
+/**
+ * DOGFOOD OS PUBLIC OVERVIEW PAGE
+ * 
+ * This page is shown ONLY to unauthenticated visitors.
+ * Explains what DOGFOOD OS is, why it exists, and how it works.
+ * Authenticated users are automatically redirected to role-specific dashboards.
+ */
+
+export default function PublicOverviewPage() {
+  const router = useRouter();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [activeRole, setActiveRole] = useState<'PARTICIPANT' | 'JUDGE' | 'ORGANIZER'>('PARTICIPANT');
+  const [currentStep, setCurrentStep] = useState(1);
+
+  // Immediate redirect check for authenticated users
   useEffect(() => {
-    dashboard
-      .stats()
-      .then((data) => {
-        if (data?.telemetry) {
-          setLiveStats({
-            teams: data.telemetry.teamsRegistered ?? 0,
-            ballots: data.telemetry.assignedBallots ?? 0,
-            health: data.workerSync?.status || 'HEALTHY',
-            latency: data.workerSync?.syncLatencyMs || 38,
-          });
+    const checkAuthAndRedirect = () => {
+      try {
+        const userStr = localStorage.getItem('dogfood_user');
+        const token = localStorage.getItem('dogfood_auth_token');
+        
+        if (userStr && token) {
+          const user = JSON.parse(userStr);
+          if (user && user.role) {
+            console.log('Found authenticated user on public page:', user.role);
+            const redirectPath = user.role === 'PARTICIPANT' ? '/participant' :
+                               user.role === 'JUDGE' ? '/judge' :
+                               user.role === 'ORGANIZER' ? '/organizer' :
+                               user.role === 'ADMIN' ? '/admin' : '/';
+            
+            if (redirectPath !== '/') {
+              console.log('Redirecting to:', redirectPath);
+              window.location.href = redirectPath; // Force redirect
+            }
+          }
         }
-      })
-      .catch((err) => console.warn('Could not load live numbers:', err));
+      } catch (e) {
+        console.error('Auth check error:', e);
+      }
+    };
+
+    checkAuthAndRedirect();
+
+    // Also listen for auth changes
+    const handleAuthChange = () => {
+      setTimeout(checkAuthAndRedirect, 100);
+    };
+
+    window.addEventListener('storage', handleAuthChange);
+    window.addEventListener('dogfood_user_updated', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('storage', handleAuthChange);
+      window.removeEventListener('dogfood_user_updated', handleAuthChange);
+    };
+  }, [router]);
+
+  // Scroll-triggered animation for lifecycle steps
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-fade-in-up');
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    document.querySelectorAll('.lifecycle-step').forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
   }, []);
 
-  const handleCopyCli = () => {
-    navigator.clipboard.writeText('npx create-dogfood-event@latest');
-    setCopiedCli(true);
-    setTimeout(() => setCopiedCli(false), 2200);
-  };
-
-  const handleCopyRootHash = () => {
-    navigator.clipboard.writeText('0x7f49c2a81de09b3c4f78e19203a98762514bcda9e201');
-    setCopiedRootHash(true);
-    setTimeout(() => setCopiedRootHash(false), 2000);
-  };
-
-  const triggerRecusalSimulation = () => {
-    setRecusalSimulated(true);
-    setRecusalTimer(38);
-    setTimeout(() => {
-      setRecusalSimulated(false);
-    }, 4500);
-  };
-
-  const trackMetrics = {
-    ai: { depth: 94, novelty: 91, feasibility: 86, tag: 'Team of AI agents that work on their own' },
-    zk: { depth: 98, novelty: 89, feasibility: 78, tag: 'Maths checks that prove a score is real' },
-    infra: { depth: 92, novelty: 85, feasibility: 95, tag: 'Keeps working when the internet does not' },
-  };
-
   return (
-    <div className="relative min-h-screen font-sans selection:bg-emerald-100 selection:text-emerald-900 text-slate-800">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-black text-white overflow-x-hidden">
       
-      {/* Ambient Decorative Natural Green Lighting Orbs */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[850px] h-[500px] bg-emerald-500/8 rounded-full blur-[140px]"></div>
-        <div className="absolute top-[35%] -right-40 w-[600px] h-[600px] bg-teal-500/6 rounded-full blur-[150px]"></div>
-        <div className="absolute top-[70%] -left-32 w-[550px] h-[550px] bg-emerald-600/6 rounded-full blur-[130px]"></div>
-      </div>
-
-      <main className="relative z-10 pt-28 sm:pt-36 pb-24">
+      {/* HERO SECTION - "THE HACKATHON OPERATING SYSTEM" */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 relative">
         
-        {/* ========================================================================= */}
-        {/* 1. HERO SECTION                                                          */}
-        {/* ========================================================================= */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 text-center flex flex-col items-center">
+        {/* Background Effects */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/3 left-1/4 w-96 h-96 rounded-full blur-[160px] bg-emerald-500/8 animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full blur-[120px] bg-teal-500/6 animate-pulse" style={{ animationDelay: '1.5s' }} />
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-12 items-center relative z-10">
           
-          {/* Announcement Pill Badge */}
-          <Link
-            href="/gallery"
-            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/95 text-xs text-slate-700 mb-8 border border-slate-200/90 hover:border-emerald-400 hover:text-emerald-800 transition-all duration-200 cursor-pointer group shadow-2xs hover:scale-105 active:scale-95 backdrop-blur-md"
-          >
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="font-bold text-emerald-700">● DOGFOOD OS v1.0</span>
-            <span className="text-slate-300">•</span>
-            <span className="text-slate-600 group-hover:text-slate-900 transition-colors font-medium">
-              Run a hackathon without arguing about scores
-            </span>
-            <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-transform" />
-          </Link>
-
-          {/* Hero Headline with Stitch Calligraphic Underline */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-900 max-w-5xl mb-6 leading-[1.12]">
-            Run a fair hackathon at{' '}
-            <span className="relative inline-block text-emerald-600">
-              any size
-              <svg className="absolute -bottom-2.5 left-0 w-full h-3 text-emerald-400/70" fill="none" preserveAspectRatio="none" viewBox="0 0 160 12">
-                <path d="M2 9.5C40 2.5 120 2.5 158 9.5" stroke="currentColor" strokeLinecap="round" strokeWidth="4"></path>
-              </svg>
-            </span>
-          </h1>
-
-          {/* High Contrast Body Paragraph */}
-          <p className="text-base sm:text-lg text-slate-600 max-w-2xl mb-10 leading-relaxed font-normal">
-            Judges score on the same scale, teams get honest feedback while they build, and every score
-            is locked so it cannot be changed later. Works with or without internet.
-          </p>
-
-          {/* Stitch Redesigned: 4 Elevated Trust Guarantee Micro-Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-4xl w-full mb-10 text-left">
-            <div className="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-xs hover:border-emerald-300 hover:shadow-sm transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 group-hover:scale-105 transition-transform">
-                <Zap className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-xs font-mono font-bold text-slate-900">Within 50ms</p>
-                <p className="text-[11px] text-slate-500">Scores agree</p>
-              </div>
+          {/* Left: Hero Content */}
+          <div className="space-y-8">
+            
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+              <span className="text-sm font-mono text-emerald-400">THE HACKATHON OPERATING SYSTEM</span>
             </div>
 
-            <div className="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-xs hover:border-emerald-300 hover:shadow-sm transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 group-hover:scale-105 transition-transform">
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-xs font-mono font-bold text-slate-900">Merkle Chain</p>
-                <p className="text-[11px] text-slate-500">Immutable records</p>
-              </div>
-            </div>
-
-            <div className="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-xs hover:border-emerald-300 hover:shadow-sm transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shrink-0 group-hover:scale-105 transition-transform">
-                <Activity className="w-5 h-5 text-teal-600" />
-              </div>
-              <div>
-                <p className="text-xs font-mono font-bold text-slate-900">Offline Air-Gap</p>
-                <p className="text-[11px] text-slate-500">Zero dropouts</p>
-              </div>
-            </div>
-
-            <div className="bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-xs hover:border-emerald-300 hover:shadow-sm transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 group-hover:scale-105 transition-transform">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-xs font-mono font-bold text-slate-900">90 seconds</p>
-                <p className="text-[11px] text-slate-500">Ready to deploy</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Stitch Redesigned: Aligned Action Dock with Support Status */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full max-w-2xl mb-14">
-            <Link
-              href="/dashboard"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-            >
-              <span>Open the organizer dashboard</span>
-              <ArrowRight className="w-4 h-4 text-white" />
-            </Link>
-
-            <Link
-              href="/judge"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-semibold text-sm border border-slate-200/90 shadow-2xs hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] transition-all group cursor-pointer"
-            >
-              <Play className="w-4 h-4 text-emerald-600 fill-emerald-600 group-hover:scale-110 transition-transform" />
-              <span>Try scoring a project</span>
-              <span className="text-[10px] font-mono text-slate-500 px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 group-hover:border-emerald-300">
-                ⌘K
-              </span>
-            </Link>
-
-            {/* Seamless Support Beacon */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-2xs text-xs font-mono">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-slate-600">Ask for help</span>
-              <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px] border border-emerald-200">
-                Online
-              </span>
-            </div>
-          </div>
-
-          {/* Trust Bar & Recognized Venues */}
-          <div className="w-full max-w-4xl pt-8 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6 text-slate-500">
-            <div className="flex items-center gap-2 text-xs font-mono text-slate-600">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span className="tracking-wide uppercase font-bold text-slate-700">Built for big events:</span>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-8 text-xs font-mono font-semibold tracking-wider text-slate-600">
-              <span className="hover:text-emerald-700 transition-colors cursor-pointer">MIT MEDIA LAB</span>
-              <span className="hover:text-emerald-700 transition-colors cursor-pointer">STANFORD TREEHACKS</span>
-              <span className="hover:text-emerald-700 transition-colors cursor-pointer">ETHGLOBAL TOKYO</span>
-              <span className="hover:text-emerald-700 transition-colors cursor-pointer">HACK THE NORTH</span>
-            </div>
-          </div>
-        </section>
-
-
-        {/* ========================================================================= */}
-        {/* 2. FLAGSHIP CENTERPIECE APP WINDOW MOCKUP (Mac Studio Command Window)      */}
-        {/* ========================================================================= */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 md:mt-24" id="cockpit">
-          <div className="rounded-3xl p-1 bg-gradient-to-b from-emerald-500/15 via-slate-100 to-white shadow-2xl border border-slate-200/80">
-            <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden shadow-2xs">
-              
-              {/* Window Header / Title Bar */}
-              <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-slate-50/90 border-b border-slate-200">
-                {/* Mac Traffic Lights & Domain breadcrumb */}
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-[#EF4444] border border-red-300 inline-block shadow-xs"></span>
-                  <span className="w-3 h-3 rounded-full bg-[#F59E0B] border border-amber-300 inline-block shadow-xs"></span>
-                  <span className="w-3 h-3 rounded-full bg-[#10B981] border border-emerald-300 inline-block shadow-xs"></span>
-                  <span className="ml-3 text-xs font-mono text-slate-500 hidden sm:flex items-center gap-1.5">
-                    <Lock className="w-3 h-3 text-emerald-600" />
-                    <span>Live workspace</span>
-                  </span>
-                </div>
-
-                {/* Event Round Breadcrumb */}
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 text-xs font-mono hover:border-emerald-300 hover:scale-105 transition-all cursor-pointer shadow-2xs"
-                >
-                  <span className="text-emerald-700 font-bold">Autonomous Systems 2026</span>
-                  <span className="text-slate-300">/</span>
-                  <span className="text-slate-600 font-medium">Round 4: judging</span>
-                </Link>
-
-                {/* Window Right Telemetry */}
-                <div className="flex items-center gap-3 text-xs font-mono">
-                  <span className="flex items-center gap-1.5 text-emerald-700 font-bold">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                    <span className="hidden md:inline">Updates every {liveStats.latency}ms</span>
-                  </span>
-                  <Link
-                    href="/dashboard"
-                    className="p-1 rounded-lg bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors cursor-pointer shadow-2xs"
-                    title="Open the organizer dashboard"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Three-column overview: scores, leaders, checks */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-200 bg-white">
-
-                {/* ------------------------------------------------------------- */}
-                {/* LEFT COLUMN: Scores coming in (4 cols)                          */}
-                {/* ------------------------------------------------------------- */}
-                <div className="lg:col-span-4 p-5 flex flex-col gap-4 bg-slate-50/50">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200">
-                        <Scale className="w-4 h-4" />
-                      </div>
-                      <span className="font-bold text-sm text-slate-900 font-sans">Scores coming in</span>
-                    </div>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
-                      JUDGES BLIND
-                    </span>
-                  </div>
-
-                  {/* Counter Card */}
-                  <Link
-                    href="/gallery"
-                    className="p-4 rounded-xl bg-white border border-slate-200 flex items-center justify-between hover:border-emerald-300 hover:scale-[1.02] transition-all cursor-pointer group shadow-2xs"
-                  >
-                    <div>
-                      <span className="text-[10px] font-mono text-slate-500 block mb-1 tracking-wider uppercase font-bold group-hover:text-emerald-700 transition-colors">
-                        PROJECTS SUBMITTED
-                      </span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-black font-mono text-slate-900">
-                          {liveStats.teams > 0 ? liveStats.teams : 38}
-                        </span>
-                        <span className="text-xs font-mono text-slate-500">of 40 checked</span>
-                      </div>
-                      <span className="text-xs font-mono text-emerald-700 flex items-center gap-1 mt-1.5 font-bold">
-                        <TrendingUp className="w-3.5 h-3.5" /> 95% of scores in
-                      </span>
-                    </div>
-
-                    <div className="w-14 h-14 rounded-full border-4 border-slate-100 border-t-emerald-600 border-r-teal-500 flex items-center justify-center text-xs font-mono font-black text-emerald-700 shadow-inner group-hover:border-t-emerald-500 transition-colors">
-                      95%
-                    </div>
-                  </Link>
-
-                  {/* Alert Banner */}
-                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-2.5 transition-colors">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="text-xs font-sans text-amber-900 leading-tight font-medium">
-                      2 scores look very different from the rest. An organizer will check them.
-                    </span>
-                  </div>
-
-                  {/* Live Submission Feed */}
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[10px] font-mono text-slate-500 tracking-wider uppercase font-bold">
-                      JUST NOW
-                    </span>
-
-                    {/* Feed Item 1 */}
-                    <div className="p-2.5 rounded-xl bg-white hover:border-emerald-300 transition-all flex items-center justify-between border border-slate-200 cursor-pointer shadow-2xs">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-mono text-xs font-bold">
-                          J1
-                        </div>
-                        <div>
-                          <div className="text-xs font-mono font-bold text-slate-900">Judge #A8F4</div>
-                          <div className="text-[11px] font-mono text-slate-500">12s ago · Gave 9.6 · Track 1</div>
-                        </div>
-                      </div>
-                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
-                        LOCKED
-                      </span>
-                    </div>
-
-                    {/* Feed Item 2 */}
-                    <div className="p-2.5 rounded-xl bg-white hover:border-cyan-300 transition-all flex items-center justify-between border border-slate-200 cursor-pointer shadow-2xs">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center font-mono text-xs font-bold">
-                          J4
-                        </div>
-                        <div>
-                          <div className="text-xs font-mono font-bold text-slate-900">Judge #C31B</div>
-                          <div className="text-[11px] font-mono text-slate-500">48s ago · Gave 8.9 · Track 1</div>
-                        </div>
-                      </div>
-                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
-                        LOCKED
-                      </span>
-                    </div>
-
-                    {/* Feed Item 3 */}
-                    <div className="p-2.5 rounded-xl bg-white hover:border-amber-300 transition-all flex items-center justify-between border border-amber-200 cursor-pointer shadow-2xs">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-mono text-xs font-bold">
-                          J2
-                        </div>
-                        <div>
-                          <div className="text-xs font-mono font-bold text-slate-900">Judge #99D2</div>
-                          <div className="text-[11px] font-mono text-amber-800">2m ago · Gave 4.2 · Being checked</div>
-                        </div>
-                      </div>
-                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold">
-                        CHECKING
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ------------------------------------------------------------- */}
-                {/* CENTER COLUMN: Who's winning right now (5 cols)                 */}
-                {/* ------------------------------------------------------------- */}
-                <div className="lg:col-span-5 p-5 flex flex-col gap-4 bg-white">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center border border-teal-200">
-                        <Sparkles className="w-4 h-4" />
-                      </div>
-                      <span className="font-bold text-sm text-slate-900 font-sans">Leading right now</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs font-mono text-slate-500">
-                      <span>Still counting</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    </div>
-                  </div>
-
-                  {/* Top 3 Podium Ranks */}
-                  <div className="space-y-3">
-                    
-                    {/* Rank 1 Card */}
-                    <Link
-                      href="/gallery"
-                      className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 border-l-4 border-l-emerald-600 flex items-center justify-between hover:border-emerald-400 hover:bg-emerald-50/50 hover:scale-[1.02] transition-all cursor-pointer group shadow-2xs"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white font-mono font-bold flex items-center justify-center shadow-xs">
-                          1
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm text-slate-900 font-sans group-hover:text-emerald-800 transition-colors">
-                              HyperAgent Engine
-                            </span>
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold">
-                              DevInfra
-                            </span>
-                          </div>
-                          <span className="text-xs text-slate-500">Runs tasks on its own, no supervision needed</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-base font-mono font-black text-emerald-700">98.4</div>
-                        <span className="text-xs font-mono text-emerald-700 font-bold">rating +34</span>
-                      </div>
-                    </Link>
-
-                    {/* Rank 2 Card */}
-                    <Link
-                      href="/gallery"
-                      className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 border-l-4 border-l-teal-600 flex items-center justify-between hover:border-teal-400 hover:bg-teal-50/50 hover:scale-[1.02] transition-all cursor-pointer group shadow-2xs"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-teal-600 text-white font-mono font-bold flex items-center justify-center shadow-xs">
-                          2
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm text-slate-900 font-sans group-hover:text-teal-800 transition-colors">
-                              ZeroKernel V3
-                            </span>
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-teal-50 border border-teal-200 text-teal-800 font-bold">
-                              ZK Circuits
-                            </span>
-                          </div>
-                          <span className="text-xs text-slate-500">Makes code compile faster, with proof it is safe</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-base font-mono font-black text-teal-700">96.1</div>
-                        <span className="text-xs font-mono text-teal-700 font-bold">rating +18</span>
-                      </div>
-                    </Link>
-
-                    {/* Rank 3 Card */}
-                    <Link
-                      href="/gallery"
-                      className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 border-l-4 border-l-amber-500 flex items-center justify-between hover:border-amber-400 hover:bg-amber-50/50 hover:scale-[1.02] transition-all cursor-pointer group shadow-2xs"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-amber-500 text-white font-mono font-bold flex items-center justify-center shadow-xs">
-                          3
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm text-slate-900 font-sans group-hover:text-amber-800 transition-colors">
-                              MeshMesh Topology
-                            </span>
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 font-bold">
-                              P2P
-                            </span>
-                          </div>
-                          <span className="text-xs text-slate-500">Finds other devices nearby in under 10ms</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-base font-mono font-black text-amber-700">94.8</div>
-                        <span className="text-xs font-mono text-emerald-700 font-bold">rating +22</span>
-                      </div>
-                    </Link>
-                  </div>
-
-                  {/* Track Distribution Progress Bars */}
-                  <div className="pt-3 border-t border-slate-200 space-y-2.5">
-                    <span className="text-[10px] font-mono text-slate-500 tracking-wider block uppercase font-bold">
-                      HOW EACH TRACK IS DOING
-                    </span>
-                    <div>
-                      <div className="flex justify-between text-xs font-mono mb-1 text-slate-700">
-                        <span>AI agents</span>
-                        <span className="font-bold text-emerald-700">84% submitted</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-600 rounded-full" style={{ width: '84%' }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-xs font-mono mb-1 text-slate-700">
-                        <span>Trust and safety</span>
-                        <span className="font-bold text-teal-700">78% submitted</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-teal-600 rounded-full" style={{ width: '78%' }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-xs font-mono mb-1 text-slate-700">
-                        <span>Developer tools</span>
-                        <span className="font-bold text-emerald-800">62% submitted</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-700 rounded-full" style={{ width: '62%' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ------------------------------------------------------------- */}
-                {/* RIGHT COLUMN: Is everything OK? (3 cols)                       */}
-                {/* ------------------------------------------------------------- */}
-                <div className="lg:col-span-3 p-5 flex flex-col gap-4 bg-slate-50/50">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200">
-                        <ShieldCheck className="w-4 h-4" />
-                      </div>
-                      <span className="font-bold text-sm text-slate-900 font-sans">Checks</span>
-                    </div>
-                    <CheckCheck className="w-4 h-4 text-emerald-600" />
-                  </div>
-
-                  {/* How closely judges agree Card */}
-                  <div className="p-4 rounded-xl bg-white border border-slate-200 flex flex-col gap-2 shadow-2xs">
-                    <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider font-bold">
-                      HOW CLOSE THE JUDGES AGREE
-                    </span>
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-3xl font-black font-mono text-emerald-700">Very close</span>
-                      <span className="text-xs font-mono text-slate-500 font-medium">no real difference</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-700 font-bold">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Scores look fair</span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-1">
-                      <div className="h-full bg-emerald-600 rounded-full" style={{ width: '94%' }}></div>
-                    </div>
-                  </div>
-
-                  {/* Locked scores proof Card */}
-                  <div className="p-4 rounded-xl bg-white border border-slate-200 flex flex-col gap-2.5 shadow-2xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider font-bold">
-                        SCORES LOCKED
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-mono flex items-center gap-1 font-bold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span>Checked</span>
-                      </span>
-                    </div>
-                    <div className="text-[11px] font-mono text-emerald-800 bg-slate-50 p-2 rounded-lg border border-slate-200 break-all select-all font-bold">
-                      fingerprint#block-4892104
-                    </div>
-                    <div className="flex items-center justify-between text-xs font-mono text-slate-500 pt-1">
-                      <span>Round number:</span>
-                      <span className="text-slate-900 font-bold">4,892,104</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs font-mono text-slate-500">
-                      <span>History:</span>
-                      <span className="text-emerald-700 font-bold">Cannot be changed</span>
-                    </div>
-                  </div>
-
-                  {/* Quick Action Button */}
-                  <Link
-                    href="/verify"
-                    className="w-full py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-mono transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-2xs font-bold"
-                  >
-                    <LockKeyhole className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>Check a score receipt</span>
-                  </Link>
-                </div>
-
-              </div>
-
-            </div>
-          </div>
-        </section>
-
-
-        {/* ========================================================================= */}
-        {/* 3. BENTO GRID (4 Interactive Feature Cards with Live Sandboxes)          */}
-        {/* ========================================================================= */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-28">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs font-mono uppercase tracking-wider text-emerald-800 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 inline-block mb-3 font-bold">
-              WHY IT IS FAIR
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-4">
-              Four things that stop arguments
-            </h2>
-            <p className="text-base text-slate-600 leading-relaxed">
-              Instead of averaging scores in a spreadsheet, we compare projects head to head, keep a
-              record nobody can edit, and move a project to a different judge the moment there is a conflict.
-            </p>
-          </div>
-
-          {/* Bento Cards Layout 2x2 with Interactive Live Micro-Sandboxes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {/* CARD 1: Head-to-Head Comparing */}
-            <div className="rounded-3xl bg-white border border-slate-200/90 shadow-2xs p-6 sm:p-8 flex flex-col justify-between hover:border-emerald-300 transition-all duration-300 group">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Scale className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2 font-sans group-hover:text-emerald-800 transition-colors">
-                  Compare two projects side by side
-                </h3>
-                <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-                  Asking "which is better, A or B?" is far more reliable than asking for a number out of ten.
-                  It also stops judges who always give 8s and 9s from skewing the result.
-                </p>
-              </div>
-
-              {/* Interactive Micro-UI: A/B Matchup Card with Live Voting */}
-              <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 space-y-3">
-                <div className="flex items-center justify-between text-xs font-mono text-slate-500 font-bold">
-                  <span>PAIR 142</span>
-                  <span className="text-emerald-700 font-bold flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> CLICK ONE TO VOTE
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Project A */}
-                  <button
-                    onClick={() => setSimulatedDuelVote('alpha')}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      simulatedDuelVote === 'alpha'
-                        ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-400 shadow-xs'
-                        : 'bg-white border-slate-200 hover:border-emerald-300 shadow-2xs'
-                    }`}
-                  >
-                    <span className="text-[10px] font-mono text-emerald-700 font-bold block mb-1">OPTION A</span>
-                    <span className="text-sm font-bold text-slate-900 block">OmniQuery</span>
-                    <div className="mt-2 flex items-center justify-between text-xs font-mono">
-                      <span>Speed</span>
-                      <span className="text-emerald-700 font-bold">12ms</span>
-                    </div>
-                    {simulatedDuelVote === 'alpha' && (
-                      <div className="mt-2 text-[10px] font-mono text-emerald-700 font-bold">
-                        ✓ Picked (rating +32)
-                      </div>
-                    )}
-                  </button>
-
-                  {/* Project B */}
-                  <button
-                    onClick={() => setSimulatedDuelVote('beta')}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      simulatedDuelVote === 'beta'
-                        ? 'bg-teal-50 border-teal-400 ring-2 ring-teal-400 shadow-xs'
-                        : 'bg-white border-slate-200 hover:border-teal-300 shadow-2xs'
-                    }`}
-                  >
-                    <span className="text-[10px] font-mono text-teal-700 font-bold block mb-1">OPTION B</span>
-                    <span className="text-sm font-bold text-slate-900 block">VaporSync</span>
-                    <div className="mt-2 flex items-center justify-between text-xs font-mono">
-                      <span>Speed</span>
-                      <span className="text-teal-700 font-bold">48ms</span>
-                    </div>
-                    {simulatedDuelVote === 'beta' && (
-                      <div className="mt-2 text-[10px] font-mono text-teal-700 font-bold">
-                        ✓ Picked (rating +28)
-                      </div>
-                    )}
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between text-xs font-mono px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 shadow-2xs">
-                  <span>
-                    Status:{' '}
-                    <strong className="text-emerald-700">
-                      {simulatedDuelVote ? 'Vote counted (this is a demo)' : 'Waiting for the judge to choose'}
-                    </strong>
-                  </span>
-                  <span className="text-slate-400 font-semibold">Demo data</span>
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 2: Idea Checker */}
-            <div className="rounded-3xl bg-white border border-slate-200/90 shadow-2xs p-6 sm:p-8 flex flex-col justify-between hover:border-teal-300 transition-all duration-300 group">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200 text-teal-700 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Brain className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2 font-sans group-hover:text-teal-800 transition-colors">
-                  Check the idea is realistic
-                </h3>
-                <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-                  Describe the plan and get honest feedback while you still have time to change it. The same
-                  check every time, so two teams never get different advice.
-                </p>
-              </div>
-
-              {/* Micro-UI: Interactive Track Selector & Rubric Progress */}
-              <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 space-y-3">
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-slate-500 font-bold">PICK A CATEGORY:</span>
-                  <div className="flex items-center space-x-1">
-                    {(['ai', 'zk', 'infra'] as const).map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setActiveIdeaTrack(t)}
-                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase transition-all cursor-pointer ${
-                          activeIdeaTrack === t
-                            ? 'bg-emerald-600 text-white shadow-2xs'
-                            : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
-                        }`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div>
-                    <div className="flex justify-between text-xs font-mono mb-1 text-slate-700">
-                      <span>How hard the engineering is</span>
-                      <span className="font-bold text-emerald-700">{trackMetrics[activeIdeaTrack].depth}%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-600 rounded-full transition-all duration-500"
-                        style={{ width: `${trackMetrics[activeIdeaTrack].depth}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs font-mono mb-1 text-slate-700">
-                      <span>How different it is</span>
-                      <span className="font-bold text-teal-700">{trackMetrics[activeIdeaTrack].novelty}%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-teal-600 rounded-full transition-all duration-500"
-                        style={{ width: `${trackMetrics[activeIdeaTrack].novelty}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs font-mono mb-1 text-slate-700">
-                      <span>Can it be finished in 48 hours</span>
-                      <span className="font-bold text-emerald-800">{trackMetrics[activeIdeaTrack].feasibility}%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-700 rounded-full transition-all duration-500"
-                        style={{ width: `${trackMetrics[activeIdeaTrack].feasibility}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs font-mono text-slate-500">
-                  <span className="truncate max-w-[200px]">{trackMetrics[activeIdeaTrack].tag}</span>
-                  <span className="text-emerald-700 flex items-center gap-1 font-bold shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Good size for the time
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 3: Locked Record */}
-            <div className="rounded-3xl bg-white border border-slate-200/90 shadow-2xs p-6 sm:p-8 flex flex-col justify-between hover:border-amber-300 transition-all duration-300 group">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Fingerprint className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2 font-sans group-hover:text-amber-800 transition-colors">
-                  A record nobody can quietly edit
-                </h3>
-                <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-                  Every locked score is added to a chain, and each new link is tied to the one before it. Change
-                  a single score anywhere and the whole check fails loudly.
-                </p>
-              </div>
-
-              {/* Micro-UI: fingerprint Card */}
-              <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 space-y-3">
-                <div className="flex items-center justify-between text-xs font-mono text-slate-500 font-bold">
-                  <span>FINGERPRINT FOR THIS ROUND</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
-                    CANNOT BE FAKED
-                  </span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white font-mono text-xs text-emerald-800 border border-slate-200 flex items-center justify-between shadow-2xs">
-                  <span className="truncate mr-2 font-bold select-all">0x7f49c2a81de09b3c4f78e19203a98762514bcda9e201</span>
-                  <button
-                    onClick={handleCopyRootHash}
-                    className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-emerald-700 transition-colors cursor-pointer shrink-0"
-                    title="Copy the fingerprint"
-                  >
-                    {copiedRootHash ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-slate-500">Sample receipt: #BLT-99214</span>
-                  <Link
-                    href="/verify"
-                    className="px-3 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition-all flex items-center gap-1 cursor-pointer font-bold shadow-2xs"
-                  >
-                    <span>Check it</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 4: Stepping Aside */}
-            <div className="rounded-3xl bg-white border border-slate-200/90 shadow-2xs p-6 sm:p-8 flex flex-col justify-between hover:border-red-300 transition-all duration-300 group">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-200 text-red-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2 font-sans group-hover:text-red-700 transition-colors">
-                  Judges can step aside instantly
-                </h3>
-                <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-                  If a judge knows a team, one click moves that project to a different judge straight away.
-                  Nobody waits, and the schedule does not slip.
-                </p>
-              </div>
-
-              {/* Micro-UI: Interactive Conflict Simulation Badge */}
-              <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 space-y-3">
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-slate-500 font-bold">CONFLICT CHECK</span>
-                  <button
-                    onClick={triggerRecusalSimulation}
-                    className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-red-50 text-red-700 border border-red-200 font-bold hover:bg-red-100 transition-colors cursor-pointer"
-                  >
-                    {recusalSimulated ? 'Moving project...' : 'Try the demo'}
-                  </button>
-                </div>
-
-                <div className={`p-3 rounded-xl border transition-all ${
-                  recusalSimulated
-                    ? 'bg-amber-50 border-amber-300 text-amber-900'
-                    : 'bg-white border-slate-200 text-slate-800 shadow-2xs'
-                }`}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center text-xs font-mono font-bold shrink-0">
-                      J3
-                    </div>
-                    <div className="text-xs font-mono">
-                      <span className="text-slate-900 font-bold block">
-                        {recusalSimulated ? 'Conflict found: this judge knows the team' : 'Ready if a conflict comes up'}
-                      </span>
-                      <span className="text-slate-500">
-                        {recusalSimulated
-                          ? `Moved to Judge #99A in ${recusalTimer}ms`
-                          : 'One click swaps in another judge with no waiting'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs font-mono text-emerald-700 font-bold">
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> The schedule carries on
-                  </span>
-                  <span className="text-slate-500 font-normal">Takes under 40ms</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-
-        {/* ========================================================================= */}
-        {/* 4. METRICS STRIP                                                         */}
-        {/* ========================================================================= */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-28">
-          <div className="rounded-3xl bg-white border border-slate-200/90 shadow-2xs p-8 sm:p-12">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 divide-y sm:divide-y-0 lg:divide-x divide-slate-100 text-center">
-              <div className="pt-4 sm:pt-0 hover:scale-105 transition-transform cursor-pointer">
-                <div className="text-4xl sm:text-5xl font-black text-slate-900 font-mono tracking-tight mb-2">
-                  {liveStats.teams > 0 ? liveStats.teams : 40}+
-                </div>
-                <div className="text-xs font-mono text-emerald-700 font-bold mb-1 uppercase tracking-wider">
-                  Projects checked
-                </div>
-                <div className="text-xs text-slate-500">Across 3 categories</div>
-              </div>
-
-              <div className="pt-4 sm:pt-0 lg:pl-8 hover:scale-105 transition-transform cursor-pointer">
-                <div className="text-4xl sm:text-5xl font-black text-teal-700 font-mono tracking-tight mb-2">
-                  {liveStats.ballots > 0 ? liveStats.ballots : 120}
-                </div>
-                <div className="text-xs font-mono text-teal-700 font-bold mb-1 uppercase tracking-wider">
-                  Scores locked in
-                </div>
-                <div className="text-xs text-slate-500">Each one saved with proof</div>
-              </div>
-
-              <div className="pt-4 sm:pt-0 lg:pl-8 hover:scale-105 transition-transform cursor-pointer">
-                <div className="text-4xl sm:text-5xl font-black text-emerald-700 font-mono tracking-tight mb-2">
-                  0
-                </div>
-                <div className="text-xs font-mono text-emerald-700 font-bold mb-1 uppercase tracking-wider">
-                  Scores changed later
-                </div>
-                <div className="text-xs text-slate-500">Judges cannot see each other</div>
-              </div>
-
-              <div className="pt-4 sm:pt-0 lg:pl-8 hover:scale-105 transition-transform cursor-pointer">
-                <div className="text-4xl sm:text-5xl font-black text-slate-900 font-mono tracking-tight mb-2">
-                  100%
-                </div>
-                <div className="text-xs font-mono text-emerald-800 font-bold mb-1 uppercase tracking-wider">
-                  Can be checked later
-                </div>
-                <div className="text-xs text-slate-500">Works online or fully offline</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-
-        {/* ========================================================================= */}
-        {/* 5. INTERACTIVE 3D PODIUM STAGE                                           */}
-        {/* ========================================================================= */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-28">
-          <div className="rounded-3xl bg-white border border-slate-200/90 shadow-2xs p-6 sm:p-8 relative overflow-hidden">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-slate-200 gap-4">
-              <div>
-                <span className="text-xs font-mono uppercase text-emerald-700 font-bold tracking-wider block mb-1">
-                  MOVE THE MOUSE TO EXPLORE
+            {/* Main Heading */}
+            <div className="space-y-4">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-black leading-tight">
+                <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-teal-400 bg-clip-text text-transparent">
+                  DOGFOOD OS
                 </span>
-                <h3 className="text-xl font-bold text-slate-900 font-sans">
-                  The winners as a 3D stage
-                </h3>
-              </div>
-              <Link
-                href="/gallery"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-xs font-mono text-emerald-800 border border-emerald-200 transition-all cursor-pointer hover:scale-105 font-bold shadow-2xs"
-              >
-                <span>See every project</span>
-                <ArrowRight className="w-3.5 h-3.5 text-emerald-700" />
-              </Link>
+              </h1>
+              <h2 className="text-2xl md:text-3xl text-white font-bold">
+                Run the hackathon.<br />
+                Verify the outcome.
+              </h2>
             </div>
 
-            <div className="mt-6">
-              <DefensiblePodiumScene />
+            {/* Supporting Description */}
+            <p className="text-lg text-slate-300 leading-relaxed max-w-xl">
+              A hackathon operating system for organizing events, coordinating teams, evaluating projects, and producing independently verifiable results.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl font-semibold transition-all transform hover:scale-105 cursor-pointer"
+              >
+                <span>Explore DOGFOOD OS</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 border border-slate-600 hover:border-emerald-500/50 rounded-xl font-medium transition-all hover:bg-slate-800/50 cursor-pointer"
+              >
+                <span>Sign In</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
-        </section>
+          {/* Right: AI-Generated Consensus Engine Visual */}
+          <div className="relative group max-w-lg mx-auto w-full">
+            {/* Ambient Aurora Glow */}
+            <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500/25 via-teal-500/20 to-purple-600/25 rounded-3xl blur-2xl opacity-80 group-hover:opacity-100 transition duration-700" />
 
+            <div className="relative rounded-3xl overflow-hidden border border-emerald-500/30 bg-slate-950/90 shadow-[0_0_50px_rgba(16,185,129,0.15)] backdrop-blur-xl">
+              <img
+                src="/hero-consensus.jpg"
+                alt="DOGFOOD OS Consensus Engine"
+                className="w-full h-auto object-cover aspect-square transition-transform duration-700 group-hover:scale-105"
+              />
 
-        {/* ========================================================================= */}
-        {/* 6. PRE-FOOTER CLI DEPLOYMENT CARD                                        */}
-        {/* ========================================================================= */}
-        <section className="max-w-4xl mx-auto px-4 sm:px-6 mt-28 text-center">
-          <div className="rounded-3xl p-8 sm:p-12 bg-emerald-50/80 border border-emerald-200 shadow-md relative overflow-hidden">
-            <div className="relative z-10 flex flex-col items-center">
-              <span className="text-xs font-mono uppercase text-emerald-800 font-bold tracking-wider mb-3">
-                RUN YOUR OWN EVENT
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 max-w-xl mb-4 leading-tight">
-                Set up your hackathon without arguing about scores afterwards
-              </h2>
-              <p className="text-sm text-slate-600 max-w-lg mb-8 leading-relaxed">
-                Start it on your own laptop in a few minutes, or put it online if you want people joining
-                from different places.
-              </p>
+              {/* Live Hologram Status Badge */}
+              <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md border border-emerald-500/40 text-[11px] font-mono text-emerald-400 shadow-lg">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>CONSENSUS PROTOCOL · ACTIVE</span>
+              </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-4 w-full justify-center">
-                <Link
-                  href="/dashboard"
-                  className="w-full sm:w-auto px-7 py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
-                >
-                  Open the dashboard
-                </Link>
-
-                <div className="w-full sm:w-auto flex items-center justify-between gap-3 px-4 py-2.5 rounded-full bg-white border border-slate-200 font-mono text-xs text-slate-800 shadow-2xs hover:border-emerald-300 transition-colors cursor-pointer">
-                  <span className="text-emerald-700 font-bold">$</span>
-                  <span className="select-all">npx create-dogfood-event@latest</span>
-                  <button
-                    onClick={handleCopyCli}
-                    className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-emerald-700 transition-colors ml-1 cursor-pointer"
-                    title="Copy the command"
-                  >
-                    {copiedCli ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                  </button>
+              {/* Cryptographic Lineage Footer Badge */}
+              <div className="absolute bottom-4 inset-x-4 p-3 rounded-2xl bg-slate-950/90 backdrop-blur-md border border-white/10 flex items-center justify-between text-xs font-mono shadow-2xl">
+                <div className="flex items-center gap-2 text-zinc-300">
+                  <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="hidden sm:inline text-zinc-400">Ledger Root:</span>
+                  <span className="text-emerald-400 font-bold">0x8f4b...3d9a</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-emerald-400 text-[11px] font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Tamper-Evident</span>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-      </main>
-
-      {/* ========================================================================= */}
-      {/* 7. MINIMALIST TECHNICAL FOOTER                                            */}
-      {/* ========================================================================= */}
-      <footer className="w-full bg-white border-t border-slate-200 relative z-10 py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-          {/* Logo & Copyright */}
-          <Link href="/" className="flex flex-col sm:flex-row items-center gap-4 cursor-pointer hover:opacity-90">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold">
-                <Terminal className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-sm font-bold text-slate-900 tracking-tight">DOGFOOD OS</span>
-            </div>
-            <span className="hidden sm:inline text-slate-300">|</span>
-            <p className="text-xs font-mono text-slate-500 text-center sm:text-left">
-              © 2026 DOGFOOD OS. Fair hackathons, start to finish.
-            </p>
-          </Link>
-
-          {/* Links */}
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-mono text-slate-600">
-            <Link href="/verify" className="hover:text-emerald-700 transition-colors cursor-pointer">
-              How the checks work
-            </Link>
-            <Link href="/verify" className="hover:text-emerald-700 transition-colors cursor-pointer">
-              Check a score
-            </Link>
-            <Link href="/dashboard" className="hover:text-emerald-700 transition-colors cursor-pointer">
-              Organizer dashboard
-            </Link>
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-emerald-700 transition-colors cursor-pointer"
-            >
-              GitHub
-            </a>
-            <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Everything is running</span>
             </div>
           </div>
         </div>
-      </footer>
+      </section>
+      {/* WHY DOGFOOD OS? - Problem/Solution Story */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-slate-800">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-black mb-6 text-white">Why DOGFOOD OS?</h2>
+          <p className="text-xl text-slate-400 max-w-3xl mx-auto">
+            Current hackathons often rely on broken processes that undermine fairness and transparency
+          </p>
+        </div>
 
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left: Current Problem */}
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-red-400 mb-6">Current Reality</h3>
+            <div className="space-y-4">
+              {[
+                { step: 'Forms', desc: 'Manual registration', icon: '📝' },
+                { step: 'Spreadsheets', desc: 'Team tracking chaos', icon: '📊' },
+                { step: 'Group Chats', desc: 'Scattered communication', icon: '💬' },
+                { step: 'Manual Assignments', desc: 'Judge allocation guesswork', icon: '👤' },
+                { step: 'Scattered Scores', desc: 'Inconsistent evaluation', icon: '📈' },
+                { step: 'Manual Result Compilation', desc: 'Error-prone ranking', icon: '🏆' }
+              ].map((item, index) => (
+                <div key={index} className="flex items-center gap-4 p-4 rounded-lg bg-red-900/20 border border-red-800/30">
+                  <span className="text-2xl">{item.icon}</span>
+                  <div>
+                    <div className="font-semibold text-red-300">{item.step}</div>
+                    <div className="text-sm text-red-400/80">{item.desc}</div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-red-400/60 ml-auto" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: DOGFOOD OS Solution */}
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-emerald-400 mb-6">DOGFOOD OS</h3>
+            <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-emerald-900/30 to-teal-900/30 border border-emerald-500/30">
+              <Terminal className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+              <h4 className="text-xl font-bold text-emerald-300 mb-4">ONE OPERATING SYSTEM</h4>
+              <div className="space-y-3 text-sm">
+                {[
+                  'Event Management',
+                  'Team Formation',
+                  'Project Tracking',
+                  'Submission System',
+                  'Judging Workflow',
+                  'Ranking Engine',
+                  'Verified Results'
+                ].map((feature, index) => (
+                  <div key={index} className="flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span className="text-emerald-200">{feature}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      {/* THREE ROLE EXPERIENCE SECTION */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-slate-800">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-black mb-6 text-white">ONE PLATFORM.<br />THREE WORKSPACES.</h2>
+          <p className="text-xl text-slate-400">Each role gets a specialized environment designed for their workflow</p>
+        </div>
+
+        {/* Role Tabs */}
+        <div className="flex flex-col sm:flex-row justify-center mb-12 gap-2">
+          {[
+            { key: 'PARTICIPANT', label: 'Participant', color: 'blue' },
+            { key: 'JUDGE', label: 'Judge', color: 'purple' },
+            { key: 'ORGANIZER', label: 'Organizer', color: 'emerald' }
+          ].map((role) => (
+            <button
+              key={role.key}
+              onClick={() => setActiveRole(role.key as any)}
+              className={`px-6 py-3 rounded-full font-semibold transition-all cursor-pointer ${
+                activeRole === role.key
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
+                  : 'text-slate-400 hover:text-white border border-slate-700 hover:border-slate-600'
+              }`}
+            >
+              {role.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Role Content */}
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          
+          {/* Left: Role Details */}
+          <div className="space-y-6">
+            {activeRole === 'PARTICIPANT' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-blue-400 mb-3">PARTICIPANT</h3>
+                  <p className="text-lg text-blue-300 mb-6">Build. Submit. Prove your work.</p>
+                </div>
+                <div className="space-y-4">
+                  {[
+                    'Join Hackathon',
+                    'Create / Join Team',
+                    'Develop Project',
+                    'Get Idea Feedback',
+                    'Prepare Submission',
+                    'Run Preflight Checks',
+                    'Submit',
+                    'Freeze Version',
+                    'Track Judging',
+                    'View Results'
+                  ].map((step, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/50 flex items-center justify-center text-xs font-bold text-blue-300">
+                        {index + 1}
+                      </div>
+                      <span className="text-blue-200">{step}</span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold transition-all cursor-pointer"
+                >
+                  <span>Explore Participant Experience</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            {activeRole === 'JUDGE' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-purple-400 mb-3">JUDGE</h3>
+                  <p className="text-lg text-purple-300 mb-6">Evaluate with structure. Commit with integrity.</p>
+                </div>
+                <div className="space-y-4">
+                  {[
+                    'Receive Assignment',
+                    'Calibration',
+                    'Review Project',
+                    'Apply Rubric',
+                    'Record Evidence',
+                    'Submit Ballot',
+                    'Cryptographic Commitment',
+                    'Verification Receipt'
+                  ].map((step, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="w-6 h-6 rounded-full bg-purple-500/20 border border-purple-500/50 flex items-center justify-center text-xs font-bold text-purple-300">
+                        {index + 1}
+                      </div>
+                      <span className="text-purple-200">{step}</span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl font-semibold transition-all cursor-pointer"
+                >
+                  <span>Explore Judge Experience</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {activeRole === 'ORGANIZER' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-emerald-400 mb-3">ORGANIZER</h3>
+                  <p className="text-lg text-emerald-300 mb-6">Run the entire event from one control tower.</p>
+                </div>
+                <div className="space-y-4">
+                  {[
+                    'Create Event',
+                    'Configure Tracks',
+                    'Configure Rubric',
+                    'Manage Participants',
+                    'Assign Judges',
+                    'Monitor Judging',
+                    'Review Rankings',
+                    'Sign Off',
+                    'Publish Results'
+                  ].map((step, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-xs font-bold text-emerald-300">
+                        {index + 1}
+                      </div>
+                      <span className="text-emerald-200">{step}</span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-semibold transition-all cursor-pointer"
+                >
+                  <span>Explore Organizer Experience</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+          {/* Right: Mock UI Preview */}
+          <div className="relative">
+            <div className="aspect-video bg-slate-900/50 rounded-2xl border border-slate-700 overflow-hidden">
+              <div className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <div className="ml-4 text-xs font-mono text-slate-400">
+                    {activeRole === 'PARTICIPANT' ? 'participant.dogfood.dev' : 
+                     activeRole === 'JUDGE' ? 'judge.dogfood.dev' : 
+                     'organizer.dogfood.dev'}
+                  </div>
+                </div>
+                
+                {/* Mock UI Content */}
+                <div className="space-y-3">
+                  <div className="h-6 bg-slate-700/50 rounded w-3/4"></div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="h-16 bg-slate-800/50 rounded"></div>
+                    <div className="h-16 bg-slate-800/50 rounded"></div>
+                    <div className="h-16 bg-slate-800/50 rounded"></div>
+                  </div>
+                  <div className="h-4 bg-slate-700/30 rounded w-1/2"></div>
+                  <div className="h-4 bg-slate-700/30 rounded w-2/3"></div>
+                </div>
+              </div>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-slate-900/90 flex items-center justify-end pr-8">
+              <div className="text-right">
+                <div className={`text-sm font-mono ${
+                  activeRole === 'PARTICIPANT' ? 'text-blue-400' :
+                  activeRole === 'JUDGE' ? 'text-purple-400' :
+                  'text-emerald-400'
+                }`}>
+                  {activeRole} DASHBOARD
+                </div>
+                <div className="text-xs text-slate-500">Role-Specific Interface</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      {/* THE HACKATHON LIFECYCLE */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-slate-800">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-black mb-6 text-white">FROM IDEA TO VERIFIED RESULT</h2>
+          <p className="text-xl text-slate-400">Follow the complete hackathon journey inside DOGFOOD OS</p>
+        </div>
+
+        <div className="space-y-8">
+          {[
+            { num: '01', title: 'DISCOVER', desc: 'Browse events and find your hackathon', role: 'VISITOR', feature: 'Event Gallery' },
+            { num: '02', title: 'REGISTER', desc: 'Join as participant, judge, or organizer', role: 'USER', feature: 'Role Selection' },
+            { num: '03', title: 'FORM TEAM', desc: 'Create or join teams with invite codes', role: 'PARTICIPANT', feature: 'Team Management' },
+            { num: '04', title: 'BUILD', desc: 'Develop your project with versioning', role: 'PARTICIPANT', feature: 'Project Tracking' },
+            { num: '05', title: 'SUBMIT', desc: 'Upload final submission with metadata', role: 'PARTICIPANT', feature: 'Submission Portal' },
+            { num: '06', title: 'FREEZE', desc: 'Lock submission with cryptographic hash', role: 'SYSTEM', feature: 'Version Control' },
+            { num: '07', title: 'ASSIGN', desc: 'Distribute projects to calibrated judges', role: 'ORGANIZER', feature: 'Judge Assignment' },
+            { num: '08', title: 'EVALUATE', desc: 'Score projects using structured rubric', role: 'JUDGE', feature: 'Evaluation Workspace' },
+            { num: '09', title: 'RANK', desc: 'Generate rankings with Bradley-Terry model', role: 'SYSTEM', feature: 'Ranking Engine' },
+            { num: '10', title: 'VERIFY', desc: 'Create public proof of integrity', role: 'SYSTEM', feature: 'Integrity Chain' },
+            { num: '11', title: 'ANNOUNCE', desc: 'Publish verifiable results', role: 'ORGANIZER', feature: 'Results Publication' }
+          ].map((step, index) => (
+            <div 
+              key={index}
+              className="lifecycle-step opacity-0 transition-all duration-700 transform translate-y-8"
+              style={{ transitionDelay: `${index * 100}ms` }}
+            >
+              <div className="flex items-center gap-8 p-6 rounded-2xl bg-slate-900/30 border border-slate-700/50 hover:border-slate-600/50 transition-all">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center font-bold text-white">
+                    {step.num}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">{step.title}</h3>
+                    <p className="text-slate-400">{step.desc}</p>
+                  </div>
+                </div>
+                <div className="ml-auto text-right">
+                  <div className="text-sm text-slate-500">{step.role}</div>
+                  <div className="text-xs text-emerald-400">{step.feature}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+      {/* INTEGRITY STORY */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-slate-800">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          
+          {/* Left: Integrity Explanation */}
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-4xl font-black mb-6 text-white">
+                Don't just publish the result.<br />
+                <span className="text-emerald-400">Make it verifiable.</span>
+              </h2>
+              <p className="text-lg text-slate-300 leading-relaxed">
+                DOGFOOD OS creates a cryptographic chain of custody for every score, 
+                ensuring results cannot be tampered with after submission.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {[
+                { step: 'Judge Ballots', desc: 'Structured evaluation with rubric scoring', icon: <Users className="w-5 h-5" /> },
+                { step: 'Hash Commitment', desc: 'Cryptographic fingerprint of each ballot', icon: <Lock className="w-5 h-5" /> },
+                { step: 'Chain Linking', desc: 'Ballots linked in tamper-evident sequence', icon: <GitBranch className="w-5 h-5" /> },
+                { step: 'Ranking Synthesis', desc: 'Bradley-Terry model generates rankings', icon: <BarChart3 className="w-5 h-5" /> },
+                { step: 'Public Verification', desc: 'Anyone can audit the complete chain', icon: <Shield className="w-5 h-5" /> }
+              ].map((item, index) => (
+                <div key={index} className="flex items-start gap-4 p-4 rounded-lg bg-slate-800/30 border border-slate-700/50">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    {item.icon}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-emerald-300">{item.step}</h4>
+                    <p className="text-sm text-slate-400 mt-1">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Visual Integrity Chain */}
+          <div className="relative">
+            <div className="space-y-4">
+              {/* Judge Evaluation */}
+              <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-500/30 text-center">
+                <Eye className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+                <div className="text-sm font-semibold text-purple-300">JUDGE EVALUATION</div>
+              </div>
+              
+              {/* Arrow */}
+              <div className="flex justify-center">
+                <ChevronRight className="w-6 h-6 text-slate-500 rotate-90" />
+              </div>
+              
+              {/* Ballot */}
+              <div className="p-4 rounded-lg bg-blue-900/20 border border-blue-500/30 text-center">
+                <Target className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                <div className="text-sm font-semibold text-blue-300">BALLOT</div>
+              </div>
+              
+              {/* Arrow */}
+              <div className="flex justify-center">
+                <ChevronRight className="w-6 h-6 text-slate-500 rotate-90" />
+              </div>
+              
+              {/* Hash/Commitment */}
+              <div className="p-4 rounded-lg bg-yellow-900/20 border border-yellow-500/30 text-center">
+                <Lock className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+                <div className="text-sm font-semibold text-yellow-300">HASH / COMMITMENT</div>
+                <div className="text-xs font-mono text-yellow-400/80 mt-1">0x4a7b9c...</div>
+              </div>
+              
+              {/* Arrow */}
+              <div className="flex justify-center">
+                <ChevronRight className="w-6 h-6 text-slate-500 rotate-90" />
+              </div>
+              
+              {/* Chain */}
+              <div className="p-4 rounded-lg bg-emerald-900/20 border border-emerald-500/30 text-center">
+                <GitBranch className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                <div className="text-sm font-semibold text-emerald-300">CHAIN</div>
+              </div>
+              
+              {/* Arrow */}
+              <div className="flex justify-center">
+                <ChevronRight className="w-6 h-6 text-slate-500 rotate-90" />
+              </div>
+              
+              {/* Public Verification */}
+              <div className="p-4 rounded-lg bg-teal-900/20 border border-teal-500/30 text-center">
+                <Shield className="w-8 h-8 text-teal-400 mx-auto mb-2" />
+                <div className="text-sm font-semibold text-teal-300">PUBLIC VERIFICATION</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      {/* WHAT EACH ROLE GETS */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-slate-800">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-black mb-6 text-white">What Each Role Gets</h2>
+          <p className="text-xl text-slate-400">Specialized tools and interfaces for every participant</p>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          
+          {/* Participant */}
+          <div className="space-y-6 p-8 rounded-2xl bg-blue-900/10 border border-blue-500/20">
+            <div className="text-center">
+              <Users className="w-12 h-12 text-blue-400 mx-auto mb-3" />
+              <h3 className="text-xl font-bold text-blue-300 mb-2">PARTICIPANT</h3>
+            </div>
+            <div className="space-y-3">
+              {[
+                'Team Management',
+                'Project Management', 
+                'Versioned Submissions',
+                'Idea Feedback',
+                'Submission Readiness',
+                'Gallery',
+                'Notifications',
+                'Support',
+                'Results'
+              ].map((feature, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-blue-400" />
+                  <span className="text-blue-200 text-sm">{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Judge */}
+          <div className="space-y-6 p-8 rounded-2xl bg-purple-900/10 border border-purple-500/20">
+            <div className="text-center">
+              <Eye className="w-12 h-12 text-purple-400 mx-auto mb-3" />
+              <h3 className="text-xl font-bold text-purple-300 mb-2">JUDGE</h3>
+            </div>
+            <div className="space-y-3">
+              {[
+                'Judge Profile/Passport',
+                'Assignments',
+                'Calibration',
+                'Rubric',
+                'Evaluation Workspace',
+                'Notes',
+                'Pairwise Comparison',
+                'Recusal',
+                'Ballot Commitment',
+                'Verification Receipt',
+                'Progress'
+              ].map((feature, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-purple-400" />
+                  <span className="text-purple-200 text-sm">{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Organizer */}
+          <div className="space-y-6 p-8 rounded-2xl bg-emerald-900/10 border border-emerald-500/20">
+            <div className="text-center">
+              <Terminal className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
+              <h3 className="text-xl font-bold text-emerald-300 mb-2">ORGANIZER</h3>
+            </div>
+            <div className="space-y-3">
+              {[
+                'Event Management',
+                'Participants',
+                'Teams',
+                'Projects',
+                'Tracks & Prizes',
+                'Rubrics',
+                'Judges',
+                'Assignments',
+                'Judging Monitor',
+                'Rankings',
+                'Results',
+                'Announcements',
+                'Audit & Integrity',
+                'Analytics'
+              ].map((feature, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-emerald-200 text-sm">{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-slate-800">
+        <div className="text-center space-y-8">
+          <div>
+            <h2 className="text-4xl font-black mb-6 text-white">
+              Ready to Enter the Hackathon?
+            </h2>
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+              Choose your path into the DOGFOOD OS ecosystem
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-6 max-w-2xl mx-auto">
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-xl font-semibold transition-all transform hover:scale-105 cursor-pointer"
+            >
+              <Users className="w-5 h-5" />
+              <span>I'm Participating</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl font-semibold transition-all transform hover:scale-105 cursor-pointer"
+            >
+              <Terminal className="w-5 h-5" />
+              <span>I'm Organizing</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="pt-4">
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 border border-slate-600 hover:border-purple-500/50 rounded-xl font-medium transition-all hover:bg-slate-800/50 cursor-pointer"
+            >
+              <Eye className="w-4 h-4" />
+              <span>I'm Judging</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onAuthSuccess={(user, token) => {
+          // Dispatch events to update auth state
+          window.dispatchEvent(new CustomEvent('dogfood_user_updated', { detail: user }));
+          window.dispatchEvent(new Event('storage'));
+          setShowAuthModal(false);
+          // LayoutShell will handle the redirect
+        }}
+      />
     </div>
   );
 }

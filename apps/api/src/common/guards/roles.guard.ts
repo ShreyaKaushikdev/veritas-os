@@ -45,17 +45,19 @@ export class RolesGuard implements CanActivate {
     const eventId = request.params?.eventId || request.body?.eventId;
     let effectiveRole: Role = userRole;
 
-    if (eventId) {
-      const membership = await this.prisma.membership.findUnique({
-        where: {
-          userId_eventId: {
+    if (eventId && user) {
+      try {
+        const membership = await this.prisma.membership.findFirst({
+          where: {
             userId: user.id,
             eventId: eventId,
           },
-        },
-      });
-      if (membership) {
-        effectiveRole = membership.role as Role;
+        });
+        if (membership) {
+          effectiveRole = membership.role as Role;
+        }
+      } catch (e) {
+        // Keep base userRole
       }
     }
 

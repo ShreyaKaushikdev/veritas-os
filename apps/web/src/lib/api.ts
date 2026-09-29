@@ -36,13 +36,18 @@ const TOKEN_KEY = 'dogfood_token';
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem(TOKEN_KEY);
+  return window.localStorage.getItem('dogfood_token') || window.localStorage.getItem('dogfood_auth_token');
 }
 
 export function setToken(token: string | null) {
   if (typeof window === 'undefined') return;
-  if (token) window.localStorage.setItem(TOKEN_KEY, token);
-  else window.localStorage.removeItem(TOKEN_KEY);
+  if (token) {
+    window.localStorage.setItem('dogfood_token', token);
+    window.localStorage.setItem('dogfood_auth_token', token);
+  } else {
+    window.localStorage.removeItem('dogfood_token');
+    window.localStorage.removeItem('dogfood_auth_token');
+  }
 }
 
 /** Thrown when something goes wrong. `.status` is the HTTP code (0 = no connection). */
@@ -214,7 +219,11 @@ export type HackathonEvent = {
 
 export const events = {
   /** All hackathons. Call this first to get an `eventId`. */
-  list: () => apiFetch<{ events: HackathonEvent[] }>('/api/v1/events'),
+  list: async () => {
+    const res = await apiFetch<any>('/api/v1/events');
+    if (Array.isArray(res)) return { events: res };
+    return res?.events ? res : { events: [] };
+  },
 
   get: (eventId: string) => apiFetch<HackathonEvent>(`/api/v1/events/${eventId}`, { auth: true }),
 
