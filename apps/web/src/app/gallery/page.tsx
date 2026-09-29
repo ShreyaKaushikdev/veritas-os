@@ -27,6 +27,7 @@ import {
   SlidersHorizontal
 } from 'lucide-react';
 import TiltCard3D from '../../components/TiltCard3D';
+import { API_BASE_URL } from '@/lib/api';
 
 interface Project {
   id: string;
@@ -68,7 +69,7 @@ export default function GalleryPage() {
   const fetchLiveProjects = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/projects?sort=${sortBy}`);
+      const res = await fetch(`${API_BASE_URL}/projects?sort=${sortBy}`);
       if (res.ok) {
         const json = await res.json();
         setProjects(json.data || []);

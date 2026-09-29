@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Navbar from './Navbar';
 import SOSBeacon from './SOSBeacon';
 import { getDefaultRoute, canAccessRoute, type Role } from '../lib/rbac';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -56,8 +57,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       if (!token) return;
 
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-        const res = await fetch(`${apiUrl}/api/v1/auth/me`, {
+        const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle2, Loader, Play, RotateCcw, Zap, Database, Users, Brain, GitBranch, Zap as ZapIcon } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface TestDataStatus {
   step: number;
@@ -75,7 +76,7 @@ export default function TestDataPage() {
       const teams = [];
       for (const team of teamData) {
         try {
-          const res = await fetch('http://localhost:4000/api/v1/teams', {
+          const res = await fetch(`${API_BASE_URL}/api/v1/teams`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(team),
@@ -120,7 +121,7 @@ export default function TestDataPage() {
 
       const projects = [];
       for (const proj of projectData) {
-        const res = await fetch('http://localhost:4000/api/v1/submissions', {
+        const res = await fetch(`${API_BASE_URL}/api/v1/submissions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(proj),
@@ -141,7 +142,7 @@ export default function TestDataPage() {
 
       for (const proj of projects) {
         try {
-          const res = await fetch(`http://localhost:4000/api/v1/submissions/${proj.id}/freeze`, {
+          const res = await fetch(`${API_BASE_URL}/api/v1/submissions/${proj.id}/freeze`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({}),
@@ -161,7 +162,7 @@ export default function TestDataPage() {
 
       try {
         const assignRes = await fetch(
-          `http://localhost:4000/api/v1/events/${eventId}/judging/assignments/generate`,
+          `${API_BASE_URL}/api/v1/events/${eventId}/judging/assignments/generate`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -535,7 +536,7 @@ export default function TestDataPage() {
             <code className="bg-black/50 px-2 py-1 rounded text-xs text-cyan-300">{eventId}</code>. Make sure this event exists first.
           </p>
           <p>
-            <strong>🔗 Backend:</strong> http://localhost:4000
+            <strong>🔗 Backend:</strong> {API_BASE_URL || 'same origin'}
           </p>
         </div>
       </div>

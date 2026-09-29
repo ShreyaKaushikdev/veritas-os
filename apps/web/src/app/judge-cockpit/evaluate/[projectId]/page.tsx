@@ -6,6 +6,7 @@ import {
   ArrowLeft, Save, Send, AlertTriangle, Eye, Lock, CheckCircle2,
   FileText, Link as LinkIcon, Github, Globe, Flag, Shield, Clock
 } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface RubricCriteria {
   id: string;
@@ -80,7 +81,7 @@ export default function EvaluateProjectPage() {
       const user = JSON.parse(userStr);
 
       // Fetch rubric
-      const rubricResponse = await fetch(`http://localhost:4000/api/v1/events/${eventId}/judging/rubric`, {
+      const rubricResponse = await fetch(`${API_BASE_URL}/api/v1/events/${eventId}/judging/rubric`, {
         headers: { 'Authorization': `Bearer ${user.id}` }
       });
       
@@ -102,7 +103,7 @@ export default function EvaluateProjectPage() {
 
       // Fetch project details
       const assignmentsResponse = await fetch(
-        `http://localhost:4000/api/v1/events/${eventId}/judging/assignments/me`,
+        `${API_BASE_URL}/api/v1/events/${eventId}/judging/assignments/me`,
         { headers: { 'Authorization': `Bearer ${user.id}` } }
       );
       
@@ -194,7 +195,7 @@ export default function EvaluateProjectPage() {
         flagReason: isFlagged ? flagReason : undefined
       };
 
-      const response = await fetch(`http://localhost:4000/api/v1/events/${eventId}/judging/ballots`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/events/${eventId}/judging/ballots`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -221,7 +222,7 @@ export default function EvaluateProjectPage() {
       if (!userStr) return;
       const user = JSON.parse(userStr);
 
-      const response = await fetch(`http://localhost:4000/api/v1/events/${eventId}/judging/recuse`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/events/${eventId}/judging/recuse`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

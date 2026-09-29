@@ -6,6 +6,7 @@ import {
   ArrowLeft, Target, TrendingUp, TrendingDown, Minus, CheckCircle2,
   AlertCircle, Info, Award, FileText
 } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface AnchorProject {
   id: string;
@@ -52,13 +53,13 @@ export default function CalibrationPage() {
 
       // Fetch anchor projects
       const anchorsResponse = await fetch(
-        `http://localhost:4000/api/v1/events/${eventId}/judging/anchors`,
+        `${API_BASE_URL}/api/v1/events/${eventId}/judging/anchors`,
         { headers: { 'Authorization': `Bearer ${user.id}` } }
       );
 
       // Fetch rubric
       const rubricResponse = await fetch(
-        `http://localhost:4000/api/v1/events/${eventId}/judging/rubric`,
+        `${API_BASE_URL}/api/v1/events/${eventId}/judging/rubric`,
         { headers: { 'Authorization': `Bearer ${user.id}` } }
       );
 
@@ -119,7 +120,7 @@ export default function CalibrationPage() {
       });
 
       const response = await fetch(
-        `http://localhost:4000/api/v1/events/${eventId}/judging/calibration`,
+        `${API_BASE_URL}/api/v1/events/${eventId}/judging/calibration`,
         {
           method: 'POST',
           headers: {

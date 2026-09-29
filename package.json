@@ -25,5 +25,8 @@
     "dogfood",
     "auditability"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
 }

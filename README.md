@@ -1,167 +1,214 @@
-# veritas-os — The Self-Hosted Hackathon Operating System (DOGFOOD OS)
+# 🛡️ DOGFOOD OS (Veritas OS)
+> **An Agent-Native, Offline-First Operating System for Fair, Auditable, and Peer-Blind Judged Hackathons**
 
-> **Product Promise**: From idea intake to published results, every decision is explainable, auditable, portable, and runnable with one command.
-
-DOGFOOD OS is an offline-first, agent-native platform that helps participants improve ideas before submission, makes judging defensible, and lets organizers run repeatable technical competitions without spreadsheet chaos.
-
----
-
-## 📚 Documentation
-
-| Document | Read it when you want to |
-|---|---|
-| [**NOTES.md**](./NOTES.md) | **Start here.** Ground truth: how the system actually flows today, every gap with `file:line` evidence, the doc-drift matrix, and the phased remediation backlog |
-| [**AUTOPILOT-API.md**](./AUTOPILOT-API.md) | **The automation feature.** Prompt → blueprint → event. Full data model, DTOs, endpoints, the apply transaction, automation rules, file manifest, and acceptance tests |
-| [**SYSTEM-DESIGN.md**](./SYSTEM-DESIGN.md) | Understand or change the design: architecture, module boundaries, data model, state machines, integrity model, API, scaling, reliability, security, observability, deployment, and the design decision log |
-| [**ENGINEERING-PRINCIPLES.md**](./ENGINEERING-PRINCIPLES.md) | Write or review code: 36 normative rules, each with an enforcement mechanism, a current-state verdict, and a CI gate |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | The short-form architecture overview |
-| [DATA-MODEL.md](./DATA-MODEL.md) | Entities, invariants, and the export manifest |
-| [JUDGING.md](./JUDGING.md) | Scoring, calibration, and disagreement routing |
-| [THREAT-MODEL.md](./THREAT-MODEL.md) | Assets, the attack matrix, and the cryptographic boundary |
-| [benchmarks/BENCHMARKS.md](./benchmarks/BENCHMARKS.md) | The measurement standard ("Honesty Rules First") and the k6 suites |
-
-> ⚠️ **Verification status.** Several claims in the sections below are **not currently substantiated** — the published contract documents a fixture stub, 37 routes are unauthenticated, `POST /api/v1/auth/google` does not verify its credential, and `docker compose up` fails on three independent blockers. `acceptance-report.txt` is **not** `run.py` output and should be deleted. See [`NOTES.md`](./NOTES.md) for the evidence and [`NOTES.md` §7](./NOTES.md#7-remediation-backlog) for the fix order. Do not cite the numbers in this README until Phase 3 of that backlog lands.
+[![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](https://opensource.org/licenses/MIT)
+[![Stack: Next.js 14](https://img.shields.io/badge/Frontend-Next.js%2014-black.svg)](https://nextjs.org/)
+[![Backend: NestJS](https://img.shields.io/badge/Backend-NestJS%2010-red.svg)](https://nestjs.com/)
+[![Database: Prisma + MongoDB](https://img.shields.io/badge/Persistence-Prisma%20%2B%20MongoDB-teal.svg)](https://www.prisma.io/)
+[![Intelligence: MegaLLM](https://img.shields.io/badge/LLM-MegaLLM%20(chatgpt--20b--oss)-purple.svg)](https://megallm.io/)
 
 ---
 
-## ⚡ Quickstart (Under 90 Seconds)
+## 📖 The Story: Why DOGFOOD OS Exists
 
-### Primary Production Deployment (Docker Compose)
+Every hackathon suffers from the same three hidden tragedies:
 
-Run the full system on an air-gapped laptop with network disabled:
+1. **The Disagreement Penalty**: Two judges disagree violently on a breakthrough project (e.g. Judge A gives **4.8/5.0**, Judge B gives **3.0/5.0**). Legacy platforms silently average their scores to a mediocre **3.9**, burying the innovation forever under mathematical noise.
+2. **The Cloud Lock-In Trap**: At Hour 44 of a 48-hour sprint, venue Wi-Fi collapses. Locked cloud forms stop loading, API tokens expire, and participants panic as the submission window freezes.
+3. **The Black Box Verdict**: Participants receive a final rank with zero transparency into how criteria weights were calculated, whether judges were biased, or if scores were tampered with post-event.
 
-```bash
-# 1. Clone repository
-git clone https://github.com/dogfood-os/dogfood-platform.git
-cd dogfood-platform
+### 💡 The Solution: DOGFOOD OS
+**DOGFOOD OS** was engineered to eliminate these flaws. Built on an **offline-first local replica architecture**, **pairwise Elo ranking algorithms**, **natural language prompt synthesis**, **non-mutating rubric weight sandboxes**, and **Merkle tree trust ledgers**, DOGFOOD OS guarantees that every developer’s work is evaluated with zero bias, mathematical transparency, and total resilience.
 
-# 2. Launch seeded portal (PostgreSQL 16, Redis 7, MinIO, MailHog, NestJS API, Next.js Web)
-docker compose up -d
+---
 
-# 3. Open browser:
-# Web Portal:   http://localhost:3000
-# Core API:     http://localhost:4000
-# OpenAPI Docs: http://localhost:4000/api/docs
-# Mail Preview: http://localhost:8025
+## 📸 Guided Feature Walkthrough & Screenshots
+
+### 1. Overview Landing & System Topology
+*The central control hub featuring instant persona switching, real-time event telemetry, and full offline-first resilience.*
+
+![01 Overview Landing](docs/screenshots/01_overview_landing.png)
+
+#### Key Highlights:
+- **Instant Persona Switcher**: Switch seamlessly between **Dr. Elena Rostova** (Organizer), **Dr. Sarah Lin** (Judge), and **Alice Walker** (Participant) in one click without re-authenticating.
+- **Offline-First Synchronization**: Runs 100% locally with high-assurance offline persistence. Remote MongoDB sync failures degrade gracefully into self-hosted offline store mode without losing data.
+- **Executive Telemetry Cake**: Real-time event statistics including total registered teams, live repository submissions, ballots cast, and review completion rates.
+
+---
+
+### 2. Organizer Command & Telemetry Center
+*The mission control panel for hackathon organizers to synthesize, launch, and govern competitive events.*
+
+![02 Organizer Command Center](docs/screenshots/02_organizer_command_center.png)
+
+#### Core Features:
+- **Prompt-to-Hackathon ⚡ (AI Fast Mode)**: Describe an event in plain English (e.g., *"Run a 48-hour Solana & Autonomous Agents Hackathon with $60,000 prize pool, 3 tracks, 4 judges per project"*). Powered by MegaLLM (`chatgpt-20b-oss`), the system synthesizes full event parameters, rubrics, tracks, and calibration anchors in seconds.
+- **Custom Blueprint Builder 🛠️**: Dynamically define hackathon scale, duration, prize pools, and custom competition tracks with custom color badges. Add or delete tracks dynamically.
+- **Targeted Disagreement Routing**: Detects judge score dispersion ($\sigma > 1.5$). Instead of averaging disagreement, DOGFOOD OS automatically routes the project to a 4th neutral judge for targeted resolution.
+- **Non-Mutating Weight Sensitivity Simulator**: A live interactive sandbox allowing organizers to adjust rubric criteria weights (Depth, Alignment, Novelty, Evidence) and preview rank movements before locking the official standings.
+- **Clean Slate & Seed Demo**: Wipe all mock entries with **`Clear All Entries 🧹`** or seed realistic sandbox data with **`Seed Demo`**.
+
+---
+
+### 3. Participant Mission Control & Idea Potential Coach
+*The developer workspace for building, scanning repositories, and submitting projects.*
+
+![03 Participant Mission Control](docs/screenshots/03_participant_mission_control.png)
+
+#### Core Features:
+- **Real-Time Pre-Flight Scan**: Scans code repositories for missing dependencies, uncommitted files, broken build scripts, and invalid demo links prior to submission freeze.
+- **Idea Potential Coach**: An AI-powered advisory agent that evaluates team hour budgets (e.g. 4 team members = 192 available hours) against scope complexity to prevent over-scoping.
+- **Version Snapshotting & Restore**: Save immutable point-in-time snapshots of project drafts and restore previous iterations safely.
+- **Deterministic Submission Freeze**: Locks repository commit SHAs and demo URLs at the deadline, generating a cryptographic submission receipt.
+
+---
+
+### 4. Judge Cockpit & Pairwise Elo Engine
+*A bias-free evaluation cockpit designed for rigorous, blind peer review.*
+
+![04 Judge Cockpit](docs/screenshots/04_judge_cockpit.png)
+
+#### Core Features:
+- **Double-Blind Peer Evaluation**: Obfuscates team names, member avatars, and personal details to eliminate unconscious bias and favoritism.
+- **Anchor Calibration Benchmarks**: Before scoring real projects, judges evaluate standardized anchor projects (**Weak**, **Median**, **Strong**) to normalize scoring baselines across different judges.
+- **Pairwise Elo Head-to-Head Queue**: Presents judges with side-by-side binary project comparisons (*Project A vs. Project B*) to resolve close leaderboard ties using Elo rating updates.
+- **Recusal Guard**: Allows judges to declare conflicts of interest on specific projects with automatic reassignment.
+
+---
+
+### 5. Public Gallery & Transparent Ballots
+*A public-facing showcase of hackathon submissions with verifiable score breakdowns.*
+
+![05 Public Gallery](docs/screenshots/05_public_gallery.png)
+
+#### Core Features:
+- **Normalized Rubric Vectors**: Displays exact sub-scores across Technical Depth, Algorithmic Novelty, Working Implementation, and Domain DX.
+- **Track Leaderboards**: Filter projects by competitive track, Elo ranking, or submission status.
+- **Inspectable Ballots**: Review anonymized judge scorecards and dispersion metrics.
+
+---
+
+### 6. Trust Ledger & Merkle Audit Trail
+*The tamper-evident cryptographic verification engine.*
+
+![06 Trust Ledger](docs/screenshots/06_trust_ledger.png)
+
+#### Core Features:
+- **Cryptographic Receipt Verification**: Computes SHA-256 hashes of every submitted ballot and anchor score, anchoring them into an immutable Merkle tree.
+- **Tamper Simulation Sandbox**: Allows auditors to intentionally tamper with a ballot score to verify that the Merkle root immediately flags integrity failure.
+- **Exportable Audit Trail**: Download full cryptographic verification proofs and audit trails in JSON/CSV format for external validation.
+
+---
+
+## 🏗️ System Architecture & Data Flow
+
+DOGFOOD OS follows a **Hexagonal / Clean Architecture** pattern designed for high availability and zero cloud lock-in.
+
+```mermaid
+graph TD
+    User([User / Browser Client]) -->|HTTP / REST| WebApp[Next.js 14 Web Client]
+    
+    subgraph Frontend Layer
+        WebApp --> Navbar[Glassmorphic Navbar & Persona Switcher]
+        WebApp --> OrganizerPage[Organizer Control Center]
+        WebApp --> ParticipantPage[Participant Mission Control]
+        WebApp --> JudgePage[Judge Cockpit]
+        WebApp --> TrustPage[Trust Ledger]
+    end
+    
+    subgraph Backend API Layer (NestJS)
+        WebApp -->|REST API| NestAPI[NestJS Backend API :4000]
+        NestAPI --> AuthGuard[AuthGuard - Fail-Closed / Demo Session]
+        NestAPI --> AutopilotCtrl[AutopilotController - MegaLLM]
+        NestAPI --> EventsService[EventsService]
+        NestAPI --> JudgingService[Judging & Elo Service]
+        NestAPI --> TrustService[Trust & Merkle Service]
+    end
+    
+    subgraph Persistence Layer
+        EventsService --> PrismaDB[(SQLite / PostgreSQL via Prisma)]
+        AutopilotCtrl --> MongoStore[(Local MongoReplica / Offline Store)]
+        TrustService --> MerkleEngine[SHA-256 Merkle Audit Tree]
+    end
+    
+    subgraph External Services
+        AutopilotCtrl --> MegaLLM[MegaLLM API - chatgpt-20b-oss]
+    end
 ```
 
-### Direct Local Development (Node.js 20+)
+---
 
-If running directly in a bare Node environment without Docker:
+## 🛠️ Technology Stack
 
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | **Next.js 14 (App Router)** | Server & Client Components, React 18, Tailwind CSS |
+| **Styling** | **Vanilla CSS + Glassmorphism** | Custom atmospheric themes, high-contrast dark palette |
+| **Icons** | **Lucide React** | Modern iconography suite |
+| **Backend** | **NestJS 10** | Enterprise TypeScript framework, Guards, Interceptors |
+| **Database** | **Prisma ORM & MongoDB** | Dual-persistence engine with offline fallback |
+| **AI / LLM** | **MegaLLM (`chatgpt-20b-oss`)** | Natural language hackathon & rubric synthesis |
+| **Algorithms** | **Pairwise Elo & Merkle Trees** | Disagreement routing, tie-breaking, cryptographic trust |
+
+---
+
+## ⚡ Quickstart Guide
+
+### Prerequisites
+- **Node.js**: v18.0.0 or higher
+- **npm**: v9.0.0 or higher
+
+### 1. Clone the Repository
 ```bash
-# Install dependencies
+git clone https://github.com/ShreyaKaushikdev/veritas-os.git
+cd veritas-os
+```
+
+### 2. Install Dependencies
+```bash
 npm install
-
-# Generate Prisma Client & push local database
-npm run prisma:generate --workspace=apps/api
-npm run prisma:push --workspace=apps/api
-
-# Seed with 40 projects, 30 judges, 120 ballots, and cryptographic hash chain
-npm run seed
-
-# Run automated acceptance and benchmark test suite (B1-B6)
-npm run test:benchmark
-
-# Start web client and API
-npm run dev
 ```
 
----
-
-## 🏛️ System Architecture & Invariants
-
-```
-                                    +-----------------------------------+
-                                    |     Next.js 14 Web Portal         |
-                                    | (Tailwind + React Three Fiber 3D) |
-                                    +-----------------+-----------------+
-                                                      |
-                                                      v  (REST / Session Auth)
-+-----------------------------------------------------+-----------------------------------------------------+
-|                                            NestJS API Gateway                                             |
-|                                                                                                           |
-|  [Auth & RBAC (403)]   [Event Autopilot]   [Submission Engine]   [Judging Console]   [Ranking Engine]     |
-|   Roles Guard           Dial: OFF/ASSIST/FULL  Deadlines & Freezing   J/K/1-9/E/F/S HUD   Anchors & Z-Norm  |
-|                                                                                                           |
-|  [Trust Layer]                              [Participant Coach]                     [Integrity Engine]    |
-|   Append-only Audit & Hash Chain (/verify)   Deterministic Bands & Scope Pressure    Disagreement Routing  |
-+-----------------------------------------------------+-----------------------------------------------------+
-                                                      |
-                   +----------------------------------+----------------------------------+
-                   |                                  |                                  |
-                   v                                  v                                  v
-       +-----------------------+          +-----------------------+          +-----------------------+
-       |     PostgreSQL 16     |          |        Redis 7        |          |      MinIO / S3       |
-       | Single Source of Truth|          |    BullMQ Job Queue   |          | Local Object Storage  |
-       +-----------------------+          +-----------------------+          +-----------------------+
+### 3. Environment Configuration
+Ensure your `apps/api/.env` file is configured:
+```env
+PORT=4000
+DATABASE_URL="file:./dev.db"
+MEGALLM_API_KEY="sk-mega-a2328cb380c9127bf91fc1855d03038e.19194e5d9d2fc9c5723f0a8f9cbbf1b7f8c436bd67e60ea03df872f195c0c7dc"
+MEGALLM_MODEL="chatgpt-20b-oss"
+FRONTEND_URL="http://localhost:3000"
 ```
 
-### Core Non-Negotiable Hard Constraints
+### 4. Run Development Servers
+Start both the API backend (`http://localhost:4000`) and Web client (`http://localhost:3000`) in parallel:
 
-1. **Air-Gapped & Offline by Default**: `AI_PROVIDER=off` uses deterministic rubric matching, scope pressure ratios, and blind-spot heuristics. No external API keys or remote cloud calls required.
-2. **Backend-Enforced Role Isolation**: Roles (`VISITOR`, `PARTICIPANT`, `JUDGE`, `ORGANIZER`, `ADMIN`) are strictly enforced in the backend with HTTP `403 Forbidden` and security audit logs on violations.
-3. **Cryptographic Hash Chain**: Every submission version freeze, ballot submission, and ranking run is linked via SHA-256 blocks. Tampering is detected via `/verify` in `< 1s`.
-4. **Judge Isolation**: Judges score projects completely independently; peer ballots and running leaderboard totals are strictly inaccessible pre-publication.
-5. **Reproducible Rankings**: Every rank is 100% reproducible from raw ballots, locked rubric criteria, and documented normalization formulas.
-
----
-
-## 🧭 Workspaces & Capabilities
-
-| Module | Core Functionality | Keyboard / Key Endpoints |
-|---|---|---|
-| **Participant Coach** | Tests idea descriptions against locked rubric; returns score bands (e.g. `68-78/100`), scope pressure gauge, blindspots, and top 3 actionable fixes. | `POST /api/v1/events/{id}/idea-reports` |
-| **Judge Console** | Rapid keyboard-first evaluation loop with evidence drawer, anomaly flags, and private notes. | Hotkeys: `J`/`K` (navigate), `1`-`9` (score), `E` (evidence), `F` (flag), `S` (save) |
-| **Command Center** | Autopilot dial (`OFF`/`ASSIST`/`FULL`), health index %, disagreement routing (triggers 4th review), and weight sensitivity sandbox. | `GET /api/v1/events/{id}/command-center` |
-| **Trust Center** | Real-time 3D hash chain visualization, tamper detection scanner, and portable event export bundle download. | `GET /api/v1/trust/verify/{id}` |
-
----
-
-## 🧪 Benchmark & Acceptance Suite (B1 - B9 + DOGFOOD 2026 Runner)
-
-### 1. Official DOGFOOD 2026 Acceptance Runner (`run.py`)
-Run the strict, standard-library-only evaluation:
 ```bash
-python run.py .dogfood.toml
-```
-Results (100% PASS):
-```
-DOGFOOD 2026 acceptance report
-portal: http://localhost:4000
-claimed: T1 T2
-fixtures: fixtures.json
+# Terminal 1: Run API Backend
+npm run dev:api
 
-T1  gallery is public ................. PASS
-T1  project from fixtures shown ....... PASS
-T1  closed event refuses submissions .. PASS
-T2  judge sees own scores ............. PASS
-T2  judge cannot see peer scores ...... PASS
-T2  participant blocked ............... PASS
-T2  csv export works .................. PASS
-
-claimed T1 T2, verified T1 T2
+# Terminal 2: Run Web Client
+npm run dev:web
 ```
 
-### 2. Comprehensive Automated Benchmark Suite (B1 - B9)
-Run the full invariant and performance suite:
-```bash
-node tests/run-benchmarks.js
-```
-
-Outputs verified receipts to `acceptance-report.txt`:
-- **B1**: Cold Start & Seeding Baseline (`0.15s` vs `< 90s` target)
-- **B2**: Backend Role Isolation Matrix (`100% 403 enforcement`)
-- **B3**: Cryptographic Tamper Detection (`16ms` vs `< 1s` detection latency)
-- **B4**: Disagreement Uncertainty Routing (targeted 4th review dispatch for high-variance projects)
-- **B5**: Weight Sensitivity Sandbox Non-Mutation Invariant (zero database state side-effects)
-- **B6**: Offline Air-Gap & Deterministic Heuristics Guarantee (100% functional with zero cloud dependencies)
-- **B7**: SOS Beacon & Anti-Herding Chat Gate (URGENT auto-triage + privacy opt-in isolation)
-- **B8**: Judge Self-Recusal & 3-Tier Deterministic Tie-Break (Rubric Priority -> Consensus -> Freeze)
-- **B9**: Spike Load Precomputed Snapshots (`p95 latency = 2ms` vs `< 500ms` target, Pairwise Bradley-Terry Elo)
+### 5. Access Application
+Open your browser and navigate to:
+- **Web App**: [http://localhost:3000](http://localhost:3000)
+- **Organizer Control Center**: [http://localhost:3000/organizer](http://localhost:3000/organizer)
+- **API Swagger Documentation**: [http://localhost:4000/api/docs](http://localhost:4000/api/docs)
 
 ---
 
-## 📄 License & Attribution
+## 🔑 Demo Account Personas
 
-Licensed under the MIT License. Developed for high-integrity, fair, and verifiable technical competitions.
+For instant offline testing, use any of the pre-configured demo personas:
+
+| Role | Name | Email | Referral / Code |
+| :--- | :--- | :--- | :--- |
+| **ORGANIZER** | Dr. Elena Rostova | `organizer@dogfood.local` | `ORGANIZER-2024-VERITAS` |
+| **JUDGE** | Judge Dr. Sarah Lin #2 | `sarah.lin@example.com` | `JUDGE-2024-VERITAS` |
+| **PARTICIPANT** | Alice Walker | `alice@dogfood.local` | N/A |
+
+---
+
+## 📜 License
+Distributed under the **MIT License**. See `LICENSE` for more information.

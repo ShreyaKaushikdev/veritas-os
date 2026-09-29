@@ -7,6 +7,7 @@ import {
   Clock, Award, Users, ArrowUpDown, MoreVertical, Lock, Flag,
   ExternalLink, Github, Globe, TrendingUp, XCircle
 } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface Project {
   id: string;
@@ -50,7 +51,7 @@ export default function ProjectsPage() {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/v1/events/${eventId}/projects`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/events/${eventId}/projects`);
       if (response.ok) {
         const data = await response.json();
         setProjects(data);
@@ -68,7 +69,7 @@ export default function ProjectsPage() {
 
   const handleExportCSV = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/v1/events/${eventId}/projects/export`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/events/${eventId}/projects/export`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);

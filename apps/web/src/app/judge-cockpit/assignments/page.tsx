@@ -6,6 +6,7 @@ import {
   ArrowLeft, CheckCircle2, Clock, AlertTriangle, Award, Filter,
   Play, Eye, FileCheck, XCircle, Search, TrendingUp
 } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface Assignment {
   assignmentId: string;
@@ -50,7 +51,7 @@ export default function AssignmentsQueuePage() {
       const user = JSON.parse(userStr);
 
       const response = await fetch(
-        `http://localhost:4000/api/v1/events/${eventId}/judging/assignments/me`,
+        `${API_BASE_URL}/api/v1/events/${eventId}/judging/assignments/me`,
         { headers: { 'Authorization': `Bearer ${user.id}` } }
       );
       

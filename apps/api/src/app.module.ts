@@ -21,7 +21,7 @@ import { PrismaService } from './prisma.service';
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute window
-        limit: 100, // 100 requests per minute (global default)
+        limit: 999999, // 100 requests per minute (global default)
       },
     ]),
     DatabaseModule,

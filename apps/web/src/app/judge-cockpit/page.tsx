@@ -7,6 +7,7 @@ import {
   Eye, Shield, Lock, Play, Settings, HelpCircle, Bell, TrendingUp,
   FileCheck, Users, Zap, Activity
 } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface JudgeCockpitData {
   judge: {
@@ -80,7 +81,7 @@ export default function JudgeCockpit() {
       const user = JSON.parse(userStr);
       
       const response = await fetch(
-        `http://localhost:4000/api/v1/events/${eventId}/judging/assignments/me`,
+        `${API_BASE_URL}/api/v1/events/${eventId}/judging/assignments/me`,
         {
           headers: {
             'Authorization': `Bearer ${user.id}` // Simplified for demo

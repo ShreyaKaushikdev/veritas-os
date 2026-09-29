@@ -315,7 +315,7 @@ export default function ParticipantMissionControl() {
     return 'BUILD';
   }
 
-  function getNextAction(): { title: string; description: string; cta: string; onClick: () => void; urgent: boolean } {
+  function getNextAction(): { title: string; description: string; cta: string; onClick: () => void; urgent: boolean; ctaLink?: string } {
     const stage = getCurrentStage();
     
     switch (stage) {

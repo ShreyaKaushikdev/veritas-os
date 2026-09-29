@@ -29,8 +29,30 @@
  * the exact path you should add on the server.
  */
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:4000';
+/*
+ * WHERE THE API LIVES
+ * ---------------------------------------------------------------------------
+ * - Deployed (Vercel): empty on purpose. Every call becomes same-origin and
+ *   relative, and the top-level rewrites in `vercel.json` forward those paths
+ *   to the `api` service. Same-origin also means the browser never makes a
+ *   cross-origin request, so the API's CORS allow-list does not apply.
+ * - Local dev: the NestJS server on its own port, because `next dev` serves
+ *   the frontend on :3000 with nothing proxying /api to :4000.
+ *
+ * Only set NEXT_PUBLIC_API_URL to an ABSOLUTE origin (e.g. a separate API
+ * host). Paths already start with /api or /, so a value like "/api" would
+ * double up into /api/api/v1/...
+ *
+ * NEXT_PUBLIC_* values are inlined at build time, so this is baked into the
+ * client bundle. Changing it needs a rebuild, not just a restart.
+ */
+const configuredBase = process.env.NEXT_PUBLIC_API_URL?.trim();
+
+export const API_BASE_URL = configuredBase
+  ? configuredBase.replace(/\/$/, '')
+  : process.env.NODE_ENV === 'production'
+    ? ''
+    : 'http://localhost:4000';
 
 const TOKEN_KEY = 'dogfood_token';
 

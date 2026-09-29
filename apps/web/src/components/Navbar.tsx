@@ -24,6 +24,7 @@ export default function Navbar() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createModalMode, setCreateModalMode] = useState<'PROMPT' | 'MANUAL'>('MANUAL');
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [liveBallots, setLiveBallots] = useState<string>('Live');
@@ -78,6 +79,7 @@ export default function Navbar() {
     // Force redirect to home page
     window.location.href = '/';
   };
+
   // Navigation links based on user role
   const getAllNavLinks = () => {
     const userRole = currentUser?.role || 'VISITOR';
@@ -128,49 +130,49 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Floating Navbar */}
-      <header className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl rounded-2xl z-50 bg-white/95 backdrop-blur-2xl border border-slate-200/90 shadow-xl">
-        <div className="flex items-center justify-between px-6 py-3">
+      {/* Floating Glassmorphic Navbar */}
+      <header className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl rounded-2xl z-50 bg-slate-950/85 backdrop-blur-2xl border border-slate-800/80 shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(16,185,129,0.1)] text-white">
+        <div className="flex items-center justify-between px-5 sm:px-6 py-3">
           
           {/* Brand Logo */}
           <Link
             href="/"
-            className="flex items-center gap-3 group transition-all duration-200 hover:scale-105 cursor-pointer"
+            className="flex items-center gap-2.5 group transition-all duration-200 hover:scale-105 cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 flex items-center justify-center shadow-md">
-              <Terminal className="w-4 h-4 text-white font-bold" />
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-600 flex items-center justify-center shadow-md">
+              <Terminal className="w-4 h-4 text-slate-950 font-black stroke-[2.5]" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-lg font-extrabold tracking-tight text-slate-900 group-hover:text-emerald-700 transition-colors">
-                DOGFOOD <span className="text-emerald-600">OS</span>
+              <span className="text-lg font-black tracking-tight text-white group-hover:text-emerald-400 transition-colors">
+                DOGFOOD <span className="text-emerald-400">OS</span>
               </span>
-              <span className="text-xs font-mono px-2 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 hidden sm:inline-flex items-center gap-1 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hidden sm:inline-flex items-center gap-1 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 v1.0
               </span>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-2">
+          <nav className="hidden lg:flex items-center gap-1.5">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-medium transition-all duration-200 flex items-center gap-2 ${
                     isActive
-                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-900/80'
                   }`}
                 >
                   <span>{link.label}</span>
                   {link.count && (
-                    <span className={`px-2 py-1 rounded-full text-xs font-mono font-bold ${
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
                       isActive 
-                        ? 'bg-emerald-600 text-white' 
-                        : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+                        ? 'bg-emerald-400 text-slate-950' 
+                        : 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300'
                     }`}>
                       {link.count}
                     </span>
@@ -179,77 +181,78 @@ export default function Navbar() {
               );
             })}
           </nav>
+
           {/* Right Side Controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {/* User Menu or Sign In */}
             {currentUser ? (
               <div className="relative">
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-sm font-medium text-slate-700 transition-all"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-xs font-mono text-slate-200 transition-all cursor-pointer"
                 >
-                  <UserCheck className="w-4 h-4 text-emerald-600" />
-                  <span className="font-medium">{cleanFirstName}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border font-mono font-bold ${
+                  <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="font-bold">{cleanFirstName}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono font-bold ${
                     userRole === 'ORGANIZER' || userRole === 'ADMIN'
-                      ? 'bg-amber-50 text-amber-800 border-amber-200'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                       : userRole === 'JUDGE'
-                      ? 'bg-purple-50 text-purple-800 border-purple-200'
-                      : 'bg-teal-50 text-teal-800 border-teal-200'
+                      ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                      : 'bg-teal-500/20 text-teal-300 border-teal-500/30'
                   }`}>
                     {currentUser.role}
                   </span>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* Dropdown Menu */}
                 {userDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-white border border-slate-200 shadow-xl p-3 z-50">
-                    <div className="px-3 py-2 border-b border-slate-100 mb-2">
-                      <div className="font-bold text-slate-900">{currentUser.name}</div>
-                      <div className="text-sm text-slate-500 truncate">{currentUser.email}</div>
+                  <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-3 z-50 text-xs font-mono">
+                    <div className="px-3 py-2 border-b border-slate-800 mb-2">
+                      <div className="font-bold text-white text-sm">{currentUser.name}</div>
+                      <div className="text-xs text-slate-400 truncate">{currentUser.email}</div>
                     </div>
 
                     <div className="space-y-1">
-                      <div className="px-3 py-1 text-xs text-slate-400 font-bold uppercase tracking-wider">
-                        Switch Role (Demo)
+                      <div className="px-3 py-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                        Switch Persona (Demo)
                       </div>
                       
                       <button
-                        onClick={() => switchPersona({ name: 'Elena Rodriguez', email: 'elena@dogfood.os', role: 'ORGANIZER' })}
-                        className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
-                          userRole === 'ORGANIZER' ? 'bg-amber-50 text-amber-900' : 'text-slate-700 hover:bg-amber-50'
+                        onClick={() => switchPersona({ name: 'Dr. Elena Rostova', email: 'elena@dogfood.os', role: 'ORGANIZER' })}
+                        className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+                          userRole === 'ORGANIZER' ? 'bg-amber-500/20 text-amber-200 border border-amber-500/30' : 'text-slate-300 hover:bg-slate-800'
                         }`}
                       >
                         <span>Elena, Organizer</span>
-                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">ORGANIZER</span>
+                        <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">ORGANIZER</span>
                       </button>
                       
                       <button
-                        onClick={() => switchPersona({ name: 'Sarah Lin', email: 'sarah.lin@dogfood.os', role: 'JUDGE' })}
-                        className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
-                          userRole === 'JUDGE' ? 'bg-purple-50 text-purple-900' : 'text-slate-700 hover:bg-purple-50'
+                        onClick={() => switchPersona({ name: 'Judge Dr. Sarah Lin #2', email: 'sarah.lin@example.com', role: 'JUDGE' })}
+                        className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+                          userRole === 'JUDGE' ? 'bg-purple-500/20 text-purple-200 border border-purple-500/30' : 'text-slate-300 hover:bg-slate-800'
                         }`}
                       >
                         <span>Sarah, Judge</span>
-                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">JUDGE</span>
+                        <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30">JUDGE</span>
                       </button>
                       
                       <button
-                        onClick={() => switchPersona({ name: 'Alice Builder', email: 'alice@dogfood.os', role: 'PARTICIPANT' })}
-                        className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
-                          userRole === 'PARTICIPANT' ? 'bg-teal-50 text-teal-900' : 'text-slate-700 hover:bg-teal-50'
+                        onClick={() => switchPersona({ name: 'Alice Walker', email: 'alice@dogfood.os', role: 'PARTICIPANT' })}
+                        className={`w-full text-left px-3 py-2 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+                          userRole === 'PARTICIPANT' ? 'bg-teal-500/20 text-teal-200 border border-teal-500/30' : 'text-slate-300 hover:bg-slate-800'
                         }`}
                       >
                         <span>Alice, Participant</span>
-                        <span className="text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded-full">PARTICIPANT</span>
+                        <span className="text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full border border-teal-500/30">PARTICIPANT</span>
                       </button>
                     </div>
 
-                    <div className="pt-2 mt-2 border-t border-slate-100">
+                    <div className="pt-2 mt-2 border-t border-slate-800">
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2 transition-colors"
+                        className="w-full text-left px-3 py-2 text-rose-400 hover:bg-rose-500/10 rounded-xl flex items-center gap-2 transition-colors cursor-pointer font-bold"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>Sign out</span>
@@ -261,20 +264,21 @@ export default function Navbar() {
             ) : (
               <button
                 onClick={() => setAuthModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-all"
+                className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs font-mono transition-all cursor-pointer shadow-md"
               >
-                <LogIn className="w-4 h-4" />
+                <LogIn className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Sign In</span>
               </button>
             )}
+
             {/* Role-Based Action Button */}
             {(userRole === 'ORGANIZER' || userRole === 'ADMIN') && (
               <button
-                onClick={() => setCreateModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold shadow-sm hover:shadow-md transition-all"
+                onClick={() => { setCreateModalMode('MANUAL'); setCreateModalOpen(true); }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold text-xs font-mono shadow-md transition-all cursor-pointer hover:scale-105 active:scale-95"
               >
-                <PlusCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Create Event</span>
+                <PlusCircle className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span className="hidden sm:inline">+ Create Event</span>
                 <span className="sm:hidden">Create</span>
               </button>
             )}
@@ -282,9 +286,9 @@ export default function Navbar() {
             {userRole === 'JUDGE' && (
               <Link
                 href="/judge"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold shadow-sm hover:shadow-md transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white font-bold text-xs font-mono shadow-md transition-all cursor-pointer"
               >
-                <ShieldCheck className="w-4 h-4" />
+                <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Judge</span>
               </Link>
             )}
@@ -292,9 +296,9 @@ export default function Navbar() {
             {userRole === 'PARTICIPANT' && (
               <Link
                 href="/participant"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold shadow-sm hover:shadow-md transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold text-xs font-mono shadow-md transition-all cursor-pointer"
               >
-                <Rocket className="w-4 h-4" />
+                <Rocket className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Build</span>
               </Link>
             )}
@@ -302,7 +306,7 @@ export default function Navbar() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              className="lg:hidden p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -311,27 +315,20 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-200 p-4">
-            <nav className="space-y-2">
+          <div className="lg:hidden border-t border-slate-800 p-4 font-mono text-xs space-y-2">
+            <nav className="space-y-1">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`block px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-emerald-50 text-emerald-800'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                    }`}
                     onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-4 py-2 rounded-xl ${
+                      isActive ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-300 hover:text-white'
+                    }`}
                   >
                     {link.label}
-                    {link.count && (
-                      <span className="ml-2 px-2 py-1 rounded-full text-xs bg-emerald-100 text-emerald-700">
-                        {link.count}
-                      </span>
-                    )}
                   </Link>
                 );
               })}
@@ -344,19 +341,13 @@ export default function Navbar() {
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
-        onAuthSuccess={(user, token) => {
-          window.dispatchEvent(new CustomEvent('dogfood_user_updated', { detail: user }));
-          window.dispatchEvent(new Event('storage'));
-          setAuthModalOpen(false);
-        }}
+        onAuthSuccess={() => setAuthModalOpen(false)}
       />
-      
+
       <CreateHackathonModal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        onSuccess={() => {
-          setCreateModalOpen(false);
-        }}
+        initialMode={createModalMode}
       />
     </>
   );

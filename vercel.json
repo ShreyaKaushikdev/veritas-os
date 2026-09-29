@@ -1,0 +1,57 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "api": {
+      "root": "apps/api",
+      "framework": "nestjs"
+    },
+    "web": {
+      "root": "apps/web",
+      "framework": "nextjs"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/dashboard/stats",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/database/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/autopilot/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/projects",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/projects/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "web"
+      }
+    }
+  ]
+}

@@ -25,6 +25,7 @@ import {
   Award,
 } from 'lucide-react';
 import AuthModal from './AuthModal';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function EnhancedNavbar() {
   const pathname = usePathname();
@@ -51,7 +52,7 @@ export default function EnhancedNavbar() {
 
   const fetchNotifications = async (userId: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/participant-automation/users/${userId}/dashboard`);
+      const res = await fetch(`${API_BASE_URL}/api/v1/participant-automation/users/${userId}/dashboard`);
       if (res.ok) {
         const data = await res.json();
         if (data.notifications) {

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, ShieldCheck, Mail, Lock, User, Terminal, CheckCircle2, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -75,7 +76,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
 
   if (!isOpen) return null;
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const apiUrl = API_BASE_URL;
 
   // Handle standard Email/Password authentication
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,7 +88,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
       const endpoint = mode === 'LOGIN' ? `${apiUrl}/api/v1/auth/login` : `${apiUrl}/api/v1/auth/register`;
       const payload = mode === 'LOGIN' 
         ? { email, password } 
-        : { email, password, name, role, judgeReferralCode: role === 'JUDGE' ? judgeReferralCode : undefined };
+        : {
+            email,
+            password,
+            name,
+            role,
+            judgeReferralCode: role === 'JUDGE' ? (judgeReferralCode || 'JUDGE-2024-VERITAS') : role === 'ORGANIZER' ? (judgeReferralCode || 'ORGANIZER-2024-VERITAS') : undefined,
+          };
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -188,7 +195,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
             password: 'password123',
             name: demoName,
             role: demoRole,
-            judgeReferralCode: demoRole === 'JUDGE' ? 'JUDGE-2024-VERITAS' : undefined,
+            judgeReferralCode: demoRole === 'JUDGE' ? 'JUDGE-2024-VERITAS' : demoRole === 'ORGANIZER' ? 'ORGANIZER-2024-VERITAS' : undefined,
           }),
         });
         const regData = await regRes.json();
@@ -358,22 +365,26 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                 >
                   <option value="PARTICIPANT">Participant (Submit & Ideate)</option>
                   <option value="JUDGE">Judge (Rubrics & Pairwise Duels)</option>
-                  <option value="ORGANIZER">Organizer (running the event)</option>
+                  <option value="ORGANIZER">Organizer (Running the Event)</option>
                 </select>
               </div>
 
-              {role === 'JUDGE' && (
+              {(role === 'JUDGE' || role === 'ORGANIZER') && (
                 <div>
-                  <label className="block text-zinc-300 font-medium mb-1 font-sans">Judge Referral Code</label>
+                  <label className="block text-zinc-300 font-medium mb-1 font-sans">
+                    {role === 'JUDGE' ? 'Judge Referral Code' : 'Organizer Passkey / Invite Code'}
+                  </label>
                   <input
                     type="text"
                     value={judgeReferralCode}
                     onChange={(e) => setJudgeReferralCode(e.target.value)}
-                    placeholder="Ask your organizer for this code"
+                    placeholder={role === 'JUDGE' ? 'JUDGE-2024-VERITAS' : 'ORGANIZER-2024-VERITAS'}
                     className="w-full px-3 py-2.5 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/80 transition-all font-mono text-xs"
                   />
                   <p className="text-[11px] text-zinc-400 mt-1">
-                    Judges need a valid referral code from the organizer to create an account
+                    {role === 'JUDGE'
+                      ? 'Judges require code JUDGE-2024-VERITAS (or from organizer)'
+                      : 'Organizers require code ORGANIZER-2024-VERITAS'}
                   </p>
                 </div>
               )}
@@ -441,5 +452,4 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
       </div>
     </div>
   );
-
 }

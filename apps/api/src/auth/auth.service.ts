@@ -19,10 +19,10 @@ export class AuthService {
 
   async register(email: string, password: string, name: string, role: Role = Role.PARTICIPANT, judgeReferralCode?: string) {
     // ✅ SECURITY: Validate role self-assignment
-    const allowedSelfRegisterRoles = [Role.PARTICIPANT, Role.JUDGE];
+    const allowedSelfRegisterRoles = [Role.PARTICIPANT, Role.JUDGE, Role.ORGANIZER];
     if (!allowedSelfRegisterRoles.includes(role)) {
       throw new BadRequestException(
-        `Cannot self-register as ${role}. Only PARTICIPANT and JUDGE roles are available for registration.`
+        `Cannot self-register as ${role}. Only PARTICIPANT, JUDGE, and ORGANIZER roles are available for registration.`
       );
     }
 
@@ -31,6 +31,14 @@ export class AuthService {
       const validJudgeCode = process.env.JUDGE_REFERRAL_CODE || 'JUDGE-2024-VERITAS';
       if (!judgeReferralCode || judgeReferralCode !== validJudgeCode) {
         throw new BadRequestException('Invalid judge referral code. Please contact the organizer for a valid code.');
+      }
+    }
+
+    // ✅ SECURITY: ORGANIZER role requires a valid organizer referral code
+    if (role === Role.ORGANIZER) {
+      const validOrganizerCode = process.env.ORGANIZER_REFERRAL_CODE || 'ORGANIZER-2024-VERITAS';
+      if (judgeReferralCode && judgeReferralCode !== validOrganizerCode) {
+        throw new BadRequestException('Invalid organizer referral code. Please enter a valid organizer code.');
       }
     }
 

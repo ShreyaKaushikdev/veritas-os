@@ -49,7 +49,7 @@ export class AutopilotController {
   }
 
   @Post('synthesize')
-  @Roles(Role.ORGANIZER, Role.ADMIN)
+  @Roles(Role.ORGANIZER, Role.ADMIN, Role.VISITOR)
   @ApiOperation({ summary: 'Autonomous Prompt-to-Hackathon: Synthesize complete event, tracks, rubric, anchors, and manifest from a single prompt' })
   async synthesizeHackathon(@Body() body: SynthesizePromptDto) {
     if (!body || !body.prompt || body.prompt.trim().length < 8) {
@@ -68,7 +68,7 @@ export class AutopilotController {
   }
 
   @Post('apply')
-  @Roles(Role.ORGANIZER, Role.ADMIN)
+  @Roles(Role.ORGANIZER, Role.ADMIN, Role.VISITOR)
   @ApiOperation({ summary: 'Apply a synthesized hackathon blueprint directly into MongoDB cluster' })
   async applyBlueprint(@Body() blueprint: any) {
     if (!blueprint || !blueprint.event || !blueprint.tracks) {

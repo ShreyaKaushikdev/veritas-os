@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { HelpCircle, X, Image as ImageIcon, Send, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function SOSBeacon() {
   const pathname = usePathname();
@@ -60,7 +61,7 @@ export default function SOSBeacon() {
     }
 
     try {
-      await fetch('http://localhost:4000/operations/sos', {
+      await fetch(`${API_BASE_URL}/operations/sos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -100,10 +101,10 @@ export default function SOSBeacon() {
       <div className="fixed bottom-6 right-6 z-40">
         <button
           onClick={() => setIsOpen(true)}
-          className="group px-4 py-2.5 rounded-full bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-300 text-slate-800 font-mono text-xs font-bold shadow-lg shadow-slate-900/5 transition-all flex items-center space-x-2 cursor-pointer hover:scale-105 active:scale-95"
+          className="group px-4 py-2.5 rounded-full bg-slate-950/90 hover:bg-slate-900 border border-emerald-500/40 hover:border-emerald-400 text-white font-mono text-xs font-bold shadow-[0_8px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(16,185,129,0.2)] backdrop-blur-xl transition-all flex items-center space-x-2 cursor-pointer hover:scale-105 active:scale-95"
         >
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-slate-700 group-hover:text-emerald-700 transition-colors">Ask for help</span>
+          <span className="text-slate-200 group-hover:text-emerald-400 transition-colors">Ask for help</span>
           <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">[Support]</span>
         </button>
       </div>
@@ -111,7 +112,7 @@ export default function SOSBeacon() {
       {/* Modal Dialog */}
       {isOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
-          <div className="w-full max-w-lg bg-white p-6 rounded-2xl border border-slate-200 shadow-2xl space-y-5 relative text-slate-800">
+          <div className="w-full max-w-lg bg-[#0d131f] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-[0_24px_80px_rgba(0,0,0,0.9),0_0_40px_rgba(16,185,129,0.15)] space-y-5 relative text-white">
             {/* Close button */}
             <button
               onClick={handleReset}
@@ -126,7 +127,7 @@ export default function SOSBeacon() {
                 <HelpCircle className="w-4 h-4 text-emerald-600" />
                 <span>OPERATIONS SOS • COMMAND CENTER DISPATCH</span>
               </div>
-              <h2 className="text-xl font-bold tracking-tight text-slate-900 mt-1">
+              <h2 className="text-xl font-bold tracking-tight text-white mt-1">
                 Report Issue to Event Operations
               </h2>
             </div>
@@ -156,8 +157,8 @@ export default function SOSBeacon() {
               <div className="space-y-4">
                 {/* Auto Context Chips */}
                 <div className="flex flex-wrap gap-2 text-[11px] font-mono">
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700">
-                    Page: <strong className="text-slate-900">{contextData.page}</strong>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-zinc-300">
+                    Page: <strong className="text-white">{contextData.page}</strong>
                   </span>
                   <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700">
                     Role: <strong className="text-emerald-700 font-bold">{contextData.role}</strong>
@@ -169,7 +170,7 @@ export default function SOSBeacon() {
 
                 {/* Message Input */}
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-mono text-slate-600 font-bold">
+                  <label className="block text-xs font-mono text-zinc-300 font-bold">
                     Describe Issue / Blocker
                   </label>
                   <textarea
@@ -177,7 +178,7 @@ export default function SOSBeacon() {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="e.g. Ballot submission verification timed out on project #4, need organizer assist..."
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 text-xs focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
+                    className="w-full px-3.5 py-2.5 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder:text-zinc-500 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/80 transition-all"
                   />
                 </div>
 
@@ -186,7 +187,7 @@ export default function SOSBeacon() {
                   <label className="block text-xs font-mono text-slate-600 font-bold">
                     Screenshot Proof (Ctrl+V paste or browse)
                   </label>
-                  <div className="border border-dashed border-slate-300 hover:border-emerald-400 rounded-xl p-3 text-center transition-colors bg-slate-50">
+                  <div className="border border-dashed border-white/15 hover:border-emerald-400/60 rounded-xl p-3 text-center transition-colors bg-white/[0.03]">
                     {screenshotBase64 ? (
                       <div className="relative inline-block">
                         <img

@@ -3,6 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 function CallbackContent() {
   const router = useRouter();
@@ -21,8 +22,7 @@ function CallbackContent() {
     try {
       localStorage.setItem('dogfood_auth_token', token);
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-      fetch(`${apiUrl}/api/v1/auth/me`, {
+      fetch(`${API_BASE_URL}/api/v1/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((res) => (res.ok ? res.json() : null))

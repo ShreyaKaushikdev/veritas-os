@@ -1,0 +1,99 @@
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║               🗑️  CLEAR DATABASE - QUICK START  🗑️                ║
+║                                                                   ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  FASTEST WAY (10 seconds):                                        ║
+║                                                                   ║
+║    1. Open: http://localhost:3000/organizer                       ║
+║    2. Click: Red "Clear All Entries 🧹" button                   ║
+║    3. Confirm: Click OK                                           ║
+║    4. Done! ✅                                                    ║
+║                                                                   ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  OR USE SCRIPT (15 seconds):                                      ║
+║                                                                   ║
+║    Windows CMD:                                                   ║
+║      clear-database.bat                                           ║
+║                                                                   ║
+║    PowerShell:                                                    ║
+║      .\clear-database.ps1                                         ║
+║                                                                   ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  OR USE API (5 seconds):                                          ║
+║                                                                   ║
+║    Browser Console (F12):                                         ║
+║      fetch('http://localhost:4000/database/clear',                ║
+║            {method: 'POST'})                                      ║
+║                                                                   ║
+║    cURL:                                                          ║
+║      curl -X POST http://localhost:4000/database/clear            ║
+║                                                                   ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  WHAT YOU'LL SEE AFTER:                                           ║
+║                                                                   ║
+║    Live Teams:         40  →  0  ✅                               ║
+║    Submissions:         1  →  0  ✅                               ║
+║    Ballots Cast:      114  →  0  ✅                               ║
+║    Review Status:     95%  →  0% ✅                               ║
+║    Disputes:            2  →  0  ✅                               ║
+║                                                                   ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  NEED HELP?                                                       ║
+║                                                                   ║
+║    📖 Read: DATABASE-MANAGEMENT-README.md                         ║
+║    🖼️  Visual Guide: CLEAR-DATABASE-VISUAL-GUIDE.md              ║
+║    📋 Detailed Steps: HOW-TO-CLEAR-DATABASE.md                    ║
+║    📊 Full Summary: SOLUTION-SUMMARY.md                           ║
+║                                                                   ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  TO RESTORE DEMO DATA (for testing):                              ║
+║                                                                   ║
+║    🖱️  UI: Click "Seed Demo" button                              ║
+║    💻 Script: reseed-database.bat or .ps1                         ║
+║    🌐 API: POST /database/reseed                                  ║
+║                                                                   ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  ⚠️  IMPORTANT:                                                   ║
+║                                                                   ║
+║    • This cannot be undone (unless you reseed)                    ║
+║    • Demo data is safe to delete anytime                          ║
+║    • Clear before production deployment                           ║
+║    • Refresh page after clearing                                  ║
+║                                                                   ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  🐛 TROUBLESHOOTING:                                              ║
+║                                                                   ║
+║    "Unable to connect to server"                                  ║
+║    → Start API: cd apps/api && npm run dev                        ║
+║                                                                   ║
+║    Button not visible                                             ║
+║    → Login as Organizer/Admin                                     ║
+║                                                                   ║
+║    Data still showing                                             ║
+║    → Refresh page (F5)                                            ║
+║                                                                   ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  ✅ SUCCESS CHECKLIST:                                            ║
+║                                                                   ║
+║    □ All metrics show 0                                           ║
+║    □ Success message appears                                      ║
+║    □ Projects list is empty                                       ║
+║    □ Dashboard shows "Clean Hackathon Workspace"                  ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+
+PICK YOUR METHOD AND CLEAR NOW! 🚀
+
+Status: ✅ Ready to use
+Last Updated: 2026-09-29

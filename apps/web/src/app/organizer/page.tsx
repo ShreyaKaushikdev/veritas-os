@@ -4,10 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Award, Sliders, AlertTriangle, ShieldCheck, Activity, Send, CheckCircle2, ArrowUpDown, HelpCircle, Download, Mail, Users, FileSpreadsheet, Clock, Image as ImageIcon, Check, Pin, LayoutDashboard, Sparkles, Copy, RefreshCw, Zap, Rocket, Terminal, Layers, Cpu, PlusCircle, ArrowRight, Trash2, Lock } from 'lucide-react';
 import CreateHackathonModal from '@/components/CreateHackathonModal';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function OrganizerPage() {
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'SUPPORT_INBOX' | 'AUDIENCE' | 'PROMPT_ORCHESTRATOR'>('OVERVIEW');
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createModalMode, setCreateModalMode] = useState<'PROMPT' | 'MANUAL'>('PROMPT');
   const [realStats, setRealStats] = useState<any>({
     event: { name: 'Live Hackathon Workspace', status: 'READY' },
     disputes: [],
@@ -49,9 +51,8 @@ export default function OrganizerPage() {
   // Fetch active hackathons from the events API
   const fetchHackathons = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
       const token = localStorage.getItem('dogfood_auth_token') || localStorage.getItem('dogfood_token');
-      const res = await fetch(`${apiUrl}/api/v1/events`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/events`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -70,7 +71,7 @@ export default function OrganizerPage() {
   // Fetch real live stats & projects from backend
   const fetchLiveTelemetry = async () => {
     try {
-      const res = await fetch('http://localhost:4000/dashboard/stats');
+      const res = await fetch(`${API_BASE_URL}/dashboard/stats`);
       if (res.ok) {
         const data = await res.json();
         setRealStats(data);
@@ -80,7 +81,7 @@ export default function OrganizerPage() {
     }
 
     try {
-      const projRes = await fetch('http://localhost:4000/submissions');
+      const projRes = await fetch(`${API_BASE_URL}/submissions`);
       if (projRes.ok) {
         const projData = await projRes.json();
         if (Array.isArray(projData)) {
@@ -140,7 +141,7 @@ export default function OrganizerPage() {
     if (!confirm('Are you sure you want to clear all mock/seeded entries and run 100% on real live data?')) return;
     setClearing(true);
     try {
-      const res = await fetch('http://localhost:4000/database/clear', {
+      const res = await fetch(`${API_BASE_URL}/database/clear`, {
         method: 'POST',
       });
       if (res.ok) {
@@ -171,7 +172,7 @@ export default function OrganizerPage() {
   const handleReseedDatabase = async () => {
     setClearing(true);
     try {
-      const res = await fetch('http://localhost:4000/database/reseed', {
+      const res = await fetch(`${API_BASE_URL}/database/reseed`, {
         method: 'POST',
       });
       if (res.ok) {
@@ -346,7 +347,7 @@ export default function OrganizerPage() {
     setSynthesizing(true);
     setDeploySuccess(null);
     try {
-      const res = await fetch('http://localhost:4000/autopilot/synthesize', {
+      const res = await fetch(`${API_BASE_URL}/autopilot/synthesize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: text }),
@@ -366,7 +367,7 @@ export default function OrganizerPage() {
     if (!synthesizedBlueprint) return;
     setDeploying(true);
     try {
-      const res = await fetch('http://localhost:4000/autopilot/apply', {
+      const res = await fetch(`${API_BASE_URL}/autopilot/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(synthesizedBlueprint),
@@ -395,7 +396,7 @@ export default function OrganizerPage() {
   // STRICT RBAC GUARD: Non-Organizers/Non-Admins cannot view the Organizer Control Center or Create Hackathon tools
   if (!currentUser || (currentUser.role !== 'ORGANIZER' && currentUser.role !== 'ADMIN')) {
     return (
-      <div className="min-h-[75vh] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-950 text-white pt-28 sm:pt-32 pb-20 px-4 flex items-center justify-center">
         <div className="max-w-2xl w-full rounded-3xl bg-slate-900/95 border border-slate-800 p-8 sm:p-10 shadow-2xl backdrop-blur-2xl space-y-6 text-center relative overflow-hidden">
           {/* Ambient Security Glow */}
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -468,95 +469,139 @@ export default function OrganizerPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* ATMOSPHERIC CLOUD GESTURE HERO BANNER (Stitch Obsidian & Mobbin Aesthetic) */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 border border-emerald-500/30 p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_40px_rgba(16,185,129,0.12)]">
+    <div className="min-h-screen bg-slate-950 text-white pt-28 sm:pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
+      {/* STITCH OBSIDIAN TELEMETRY COMMAND HERO BANNER */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#090d16] via-[#0d1322] to-[#141c2e] border border-teal-500/25 p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(16,185,129,0.12)]">
         {/* Luminous Mesh Cloud Orbs */}
-        <div className="absolute -top-12 -right-12 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none animate-pulse" />
-        <div className="absolute -bottom-16 left-1/3 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/3 right-1/4 w-60 h-60 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -top-16 -right-16 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute -bottom-20 left-1/4 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-mono border border-emerald-500/30 shadow-xs">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-spin" style={{ animationDuration: '8s' }} />
-              <span className="font-semibold uppercase tracking-wider">AUTONOMOUS HACKATHON OPERATING ENGINE</span>
+        <div className="relative z-10 space-y-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-2 max-w-2xl">
+              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-mono border border-emerald-500/30 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="font-bold tracking-widest uppercase text-[11px]">SYS.NODE // 0x48F • OBSIDIAN TELEMETRY COMMAND</span>
+              </div>
+              
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white font-sans">
+                Event Operations & Control Center
+              </h1>
+              
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+                Synthesize and deploy hackathons in seconds with prompt-to-rubric calibration, pairwise Elo ranking, and zero cloud runtime lock-in.
+              </p>
+
+              {/* Quick Template Presets */}
+              <div className="pt-2 flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-mono text-slate-400 font-semibold mr-1">Quick Presets:</span>
+                {[
+                  { label: '⚡ Solana & AI ($60k)', prompt: 'Run a 48-hour Solana & Autonomous Agents Hackathon with 500 hackers, $60,000 prize pool, 3 tracks (DeFi Execution Agents, ZK Proof Verification, DePIN Mesh), 4 judges per project with blind peer evaluation, anchor calibration, and pairwise Elo ranking.' },
+                  { label: '🛡️ ZK Cryptography ($40k)', prompt: 'Organize a 36-hour ZK Cryptography & Verifiable Systems hackathon for 300 participants, $40k prize pool, 3 tracks (Provable State Machines, Private Voting DAGs, Circom Compilers), strict blind evaluation, anti-collusion trimmed mean, and zero-knowledge receipts.' },
+                  { label: '🌍 ClimateTech DePIN ($100k)', prompt: 'Launch a 72-hour global ClimateTech and DePIN hackathon with 800 hackers, $100k quadratic funding pool, 4 tracks (Renewable Microgrids, Carbon Proofs, Edge Sensor Networks, Circular Supply Chain), anchor calibrated scoring, and automated tie-breaking.' },
+                ].map((p, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setPromptInput(p.prompt);
+                      setActiveTab('PROMPT_ORCHESTRATOR');
+                      handleSynthesize(p.prompt);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-[11px] font-mono transition-all cursor-pointer"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center gap-3">
-              Event Operations & Control Center
-            </h1>
-            
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Synthesize and deploy hackathons in seconds with prompt-to-rubric calibration, pairwise Elo ranking, and zero cloud runtime lock-in.
-            </p>
 
-            {/* Quick Template Presets Row */}
-            <div className="pt-2 flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-mono text-slate-400 font-semibold mr-1">Quick Presets:</span>
-              {[
-                { label: '⚡ Solana & AI ($60k)', prompt: 'Run a 48-hour Solana & Autonomous Agents Hackathon with 500 hackers, $60,000 prize pool, 3 tracks (DeFi Execution Agents, ZK Proof Verification, DePIN Mesh), 4 judges per project with blind peer evaluation, anchor calibration, and pairwise Elo ranking.' },
-                { label: '🛡️ ZK Cryptography ($40k)', prompt: 'Organize a 36-hour ZK Cryptography & Verifiable Systems hackathon for 300 participants, $40k prize pool, 3 tracks (Provable State Machines, Private Voting DAGs, Circom Compilers), strict blind evaluation, anti-collusion trimmed mean, and zero-knowledge receipts.' },
-                { label: '🌍 ClimateTech DePIN ($100k)', prompt: 'Launch a 72-hour global ClimateTech and DePIN hackathon with 800 hackers, $100k quadratic funding pool, 4 tracks (Renewable Microgrids, Carbon Proofs, Edge Sensor Networks, Circular Supply Chain), anchor calibrated scoring, and automated tie-breaking.' },
-              ].map((p, idx) => (
+            {/* Action CTAs */}
+            <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
+              <button
+                onClick={() => { setCreateModalMode('MANUAL'); setCreateModalOpen(true); }}
+                className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm font-mono shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/45 hover:scale-[1.02] active:scale-98 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <PlusCircle className="w-5 h-5 text-slate-950 stroke-[2.5]" />
+                <span>+ Create Hackathon</span>
+              </button>
+
+              <button
+                onClick={() => { setCreateModalMode('PROMPT'); setCreateModalOpen(true); }}
+                className="px-4 py-2.5 rounded-xl bg-[#141c2e] hover:bg-slate-800 text-emerald-400 hover:text-white border border-teal-500/30 hover:border-emerald-500 text-xs font-mono font-bold shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <span>⚡ Prompt-to-Hackathon</span>
+              </button>
+
+              <div className="flex items-center gap-2">
                 <button
-                  key={idx}
-                  onClick={() => {
-                    setPromptInput(p.prompt);
-                    setActiveTab('PROMPT_ORCHESTRATOR');
-                    handleSynthesize(p.prompt);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-300 border border-slate-700 hover:border-emerald-500/40 text-[11px] font-mono transition-all cursor-pointer"
+                  onClick={handleClearDatabase}
+                  disabled={clearing}
+                  title="Wipe all mock/seeded records to run 100% on real live data"
+                  className="flex-1 px-3 py-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-white border border-red-500/30 text-[11px] font-mono font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
                 >
-                  {p.label}
+                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  <span>{clearing ? 'Clearing...' : 'Clear All Entries 🧹'}</span>
                 </button>
-              ))}
+                
+                <button
+                  onClick={handleReseedDatabase}
+                  disabled={clearing}
+                  title="Seed demo hackathon state"
+                  className="px-2.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 text-[11px] font-mono transition-all cursor-pointer"
+                >
+                  Seed Demo
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Action CTAs */}
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
-            {/* Primary Eye-Catching Create Hackathon Button */}
-            <button
-              onClick={() => setCreateModalOpen(true)}
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-sm shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-[1.02] active:scale-98 transition-all flex items-center justify-center space-x-2.5 cursor-pointer"
-            >
-              <PlusCircle className="w-5 h-5 text-slate-950 stroke-[2.5]" />
-              <span>+ Create Hackathon</span>
-            </button>
+          {/* High-Density Real-Time Telemetry Metric Tiles */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-4 border-t border-slate-800/80 font-mono">
+            <div className="p-3.5 rounded-2xl bg-[#0d1322]/90 border border-teal-500/20">
+              <div className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Live Teams</div>
+              <div className="text-xl font-extrabold text-white mt-1">
+                {realStats.telemetry?.teamsRegistered ?? hackathons.reduce((acc: number, e: any) => acc + (e._count?.teams || 0), 0)}
+              </div>
+              <div className="text-[10px] text-emerald-400 font-bold mt-0.5">
+                {hackathons.length > 0 ? `${hackathons.length} Active Events` : 'Live Database Sync'}
+              </div>
+            </div>
 
-            {/* Prompt-to-Hackathon Tab Shortcut */}
-            <button
-              onClick={() => {
-                setActiveTab('PROMPT_ORCHESTRATOR');
-                if (!synthesizedBlueprint) handleSynthesize();
-              }}
-              className="px-4 py-2.5 rounded-2xl bg-slate-800/90 hover:bg-slate-800 text-emerald-400 hover:text-white border border-emerald-500/40 hover:border-emerald-500 text-xs font-mono font-bold shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <span>⚡ Prompt-to-Hackathon</span>
-            </button>
+            <div className="p-3.5 rounded-2xl bg-[#0d1322]/90 border border-teal-500/20">
+              <div className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Submissions</div>
+              <div className="text-xl font-extrabold text-white mt-1">
+                {liveProjects.length || hackathons.reduce((acc: number, e: any) => acc + (e._count?.projects || 0), 0)}
+              </div>
+              <div className="text-[10px] text-teal-400 font-bold mt-0.5">Verified Repos & Drafts</div>
+            </div>
 
-            {/* Clear Database (Clean Slate) Button */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleClearDatabase}
-                disabled={clearing}
-                title="Wipe all mock/seeded records to run 100% on real live data"
-                className="flex-1 px-3 py-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-white border border-red-500/30 text-[11px] font-mono font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                <span>{clearing ? 'Clearing...' : 'Clear All Entries 🧹'}</span>
-              </button>
-              
-              <button
-                onClick={handleReseedDatabase}
-                disabled={clearing}
-                title="Seed demo hackathon state"
-                className="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 text-[11px] font-mono transition-all cursor-pointer"
-              >
-                Seed Demo
-              </button>
+            <div className="p-3.5 rounded-2xl bg-[#0d1322]/90 border border-teal-500/20">
+              <div className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Ballots Cast</div>
+              <div className="text-xl font-extrabold text-white mt-1">
+                {realStats.telemetry?.ballotsSubmitted || 0}
+              </div>
+              <div className="text-[10px] text-emerald-400 font-bold mt-0.5">
+                of {realStats.telemetry?.assignedBallots || 0} assigned
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#0d1322]/90 border border-teal-500/20">
+              <div className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Review Status</div>
+              <div className="text-xl font-extrabold text-amber-400 mt-1">
+                {realStats.telemetry?.reviewCompletionPercentage || 0}%
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5">
+                Score Mean: {realStats.telemetry?.calibratedMeanScore || 'N/A'}
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#0d1322]/90 border border-teal-500/20">
+              <div className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Disputes</div>
+              <div className="text-xl font-extrabold text-emerald-400 mt-1">
+                {realStats.telemetry?.disputesFlagged || 0}
+              </div>
+              <div className="text-[10px] text-emerald-400 font-bold mt-0.5">Flagged In Review</div>
             </div>
           </div>
         </div>
@@ -580,8 +625,7 @@ export default function OrganizerPage() {
           <button
             onClick={() => setActiveTab('OVERVIEW')}
             className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
-              activeTab === 'OVERVIEW'
-                ? 'bg-amber-400 text-slate-950 font-bold shadow-sm'
+              activeTab === 'OVERVIEW' ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black shadow-md shadow-emerald-500/20'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -590,8 +634,7 @@ export default function OrganizerPage() {
           <button
             onClick={() => setActiveTab('SUPPORT_INBOX')}
             className={`px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer ${
-              activeTab === 'SUPPORT_INBOX'
-                ? 'bg-amber-400 text-slate-950 font-bold shadow-sm'
+              activeTab === 'SUPPORT_INBOX' ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black shadow-md shadow-emerald-500/20'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -606,8 +649,7 @@ export default function OrganizerPage() {
           <button
             onClick={() => setActiveTab('AUDIENCE')}
             className={`px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer ${
-              activeTab === 'AUDIENCE'
-                ? 'bg-amber-400 text-slate-950 font-bold shadow-sm'
+              activeTab === 'AUDIENCE' ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black shadow-md shadow-emerald-500/20'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -615,10 +657,7 @@ export default function OrganizerPage() {
             <span>Audience & Sheets</span>
           </button>
           <button
-            onClick={() => {
-              setActiveTab('PROMPT_ORCHESTRATOR');
-              if (!synthesizedBlueprint) handleSynthesize();
-            }}
+            onClick={() => { setCreateModalMode('PROMPT'); setCreateModalOpen(true); }}
             className={`px-4 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer ${
               activeTab === 'PROMPT_ORCHESTRATOR'
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black shadow-md shadow-emerald-500/20'
@@ -680,7 +719,7 @@ export default function OrganizerPage() {
                 </div>
               </div>
               <button
-                onClick={() => setCreateModalOpen(true)}
+                onClick={() => { setCreateModalMode('MANUAL'); setCreateModalOpen(true); }}
                 className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold text-xs font-mono shadow-md flex items-center space-x-1.5 cursor-pointer transition-all hover:scale-[1.02] active:scale-98"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
@@ -710,7 +749,7 @@ export default function OrganizerPage() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setCreateModalOpen(true)}
+                  onClick={() => { setCreateModalMode('MANUAL'); setCreateModalOpen(true); }}
                   className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold text-xs font-mono shadow-lg cursor-pointer transition-all"
                 >
                   <PlusCircle className="w-4 h-4" />
@@ -873,7 +912,7 @@ export default function OrganizerPage() {
                 <span>Public Gallery</span>
               </Link>
               <button
-                onClick={() => setCreateModalOpen(true)}
+                onClick={() => { setCreateModalMode('PROMPT'); setCreateModalOpen(true); }}
                 className="px-3 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-bold text-xs font-mono border border-emerald-500/30 flex items-center space-x-1.5 cursor-pointer transition-all"
               >
                 <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
@@ -1606,6 +1645,7 @@ export default function OrganizerPage() {
       <CreateHackathonModal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
+        initialMode={createModalMode}
         onCreated={(blueprint) => {
           setSynthesizedBlueprint(blueprint);
           setActiveTab('PROMPT_ORCHESTRATOR');

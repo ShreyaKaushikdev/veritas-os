@@ -844,7 +844,7 @@ paths:
       responses:
         '200':
           description: ''
-  /api/v1/events/{eventId}/idea-reports:
+  /api/v1/intelligence/events/{eventId}/idea-reports:
     post:
       operationId: IntelligenceController_createReport
       parameters:
@@ -856,7 +856,7 @@ paths:
       responses:
         '201':
           description: ''
-  /api/v1/events/{eventId}/idea-reports/{id}:
+  /api/v1/intelligence/events/{eventId}/idea-reports/{id}:
     get:
       operationId: IntelligenceController_getReport
       parameters:
@@ -888,6 +888,13 @@ paths:
             type: string
       responses:
         '200':
+          description: ''
+  /api/v1/intelligence/llm/complete:
+    post:
+      operationId: IntelligenceController_llmComplete
+      parameters: []
+      responses:
+        '201':
           description: ''
   /api/v1/trust/verify/{eventId}:
     get:

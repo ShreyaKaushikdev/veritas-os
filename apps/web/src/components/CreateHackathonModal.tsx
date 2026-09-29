@@ -19,20 +19,67 @@ import {
   Clock,
   Sliders,
   FileCode2,
-  ArrowRight
+  ArrowRight,
+  Plus,
+  Trash2,
+  Palette
 } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface CreateHackathonModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreated?: (blueprint: any) => void;
+  initialMode?: 'PROMPT' | 'MANUAL';
 }
 
-export default function CreateHackathonModal({ isOpen, onClose, onCreated }: CreateHackathonModalProps) {
+export default function CreateHackathonModal({ isOpen, onClose, onCreated, initialMode = 'PROMPT' }: CreateHackathonModalProps) {
   const router = useRouter();
-  const [creationMode, setCreationMode] = useState<'PROMPT' | 'MANUAL'>('PROMPT');
+  const [creationMode, setCreationMode] = useState<'PROMPT' | 'MANUAL'>(initialMode);
+  const prevIsOpenRef = React.useRef(isOpen);
+
+  React.useEffect(() => {
+    if (isOpen && !prevIsOpenRef.current) {
+      setCreationMode(initialMode);
+    }
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen, initialMode]);
   
-  // Prompt mode state
+  // Dynamic tracks state for manual blueprint builder
+  const [manualTracks, setManualTracks] = useState<Array<{ id: string; name: string; tagline: string; color: string }>>([
+    { id: 'track-1', name: 'Multi-Agent Consensus & Swarms', tagline: 'Decentralized agent coordination and peer-to-peer memory topologies.', color: '#10b981' },
+    { id: 'track-2', name: 'Deterministic Guardrails & Audit', tagline: 'Verifiable execution sandboxes and tamper-evident trace logging.', color: '#06b6d4' },
+    { id: 'track-3', name: 'Sub-50ms Edge Models & WASM', tagline: 'Local neural inference pipelines and lightweight compiled tools.', color: '#8b5cf6' },
+  ]);
+
+  const handleAddTrack = () => {
+    const palette = ['#10b981', '#06b6d4', '#8b5cf6', '#ec4899', '#f59e0b', '#3b82f6'];
+    const nextColor = palette[manualTracks.length % palette.length];
+    setManualTracks((prev) => [
+      ...prev,
+      {
+        id: `track-${Date.now()}`,
+        name: `Track #${prev.length + 1}`,
+        tagline: 'Scope and objective for this competitive track.',
+        color: nextColor,
+      }
+    ]);
+  };
+
+  const handleRemoveTrack = (index: number) => {
+    if (manualTracks.length <= 1) return;
+    setManualTracks((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleTrackChange = (index: number, field: 'name' | 'tagline' | 'color', val: string) => {
+    setManualTracks((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: val };
+      return copy;
+    });
+  };
+
+    // Prompt mode state
   const [promptInput, setPromptInput] = useState(
     'Run a 48-hour Solana & Autonomous Agents Hackathon with 500 hackers, $60,000 prize pool, 3 tracks (DeFi Execution Agents, ZK Proof Verification, DePIN Mesh), 4 judges per project with blind peer evaluation, anchor calibration, and pairwise Elo ranking.'
   );
@@ -40,6 +87,7 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
   const [synthesizedBlueprint, setSynthesizedBlueprint] = useState<any>(null);
   const [deploying, setDeploying] = useState(false);
   const [deploySuccess, setDeploySuccess] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Manual mode state
   const [manualForm, setManualForm] = useState({
@@ -49,12 +97,6 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
     participants: 450,
     prizeTotal: '$50,000',
     domain: 'Autonomous Agents & Distributed Tooling',
-    track1Name: 'Multi-Agent Consensus & Swarms',
-    track1Tagline: 'Decentralized agent coordination and peer-to-peer memory topologies.',
-    track2Name: 'Deterministic Guardrails & Audit',
-    track2Tagline: 'Verifiable execution sandboxes and tamper-evident trace logging.',
-    track3Name: 'Sub-50ms Edge Models & WASM',
-    track3Tagline: 'Local neural inference pipelines and lightweight compiled tools.',
   });
 
   if (!isOpen) return null;
@@ -90,18 +132,26 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
     const text = promptOverride || promptInput;
     setSynthesizing(true);
     setDeploySuccess(null);
+    setErrorMessage(null);
     try {
-      const res = await fetch('http://localhost:4000/autopilot/synthesize', {
+      const res = await fetch(`${API_BASE_URL}/autopilot/synthesize`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: (() => {
+          const t = typeof window !== 'undefined' ? (localStorage.getItem('dogfood_auth_token') || localStorage.getItem('dogfood_token') || 'demo-organizer-token') : 'demo-organizer-token';
+          return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t}` };
+        })(),
         body: JSON.stringify({ prompt: text }),
       });
       if (res.ok) {
         const data = await res.json();
         setSynthesizedBlueprint(data);
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        setErrorMessage(errorData.message || `Failed to synthesize: ${res.status} ${res.statusText}`);
       }
     } catch (e) {
       console.warn('Synthesize error:', e);
+      setErrorMessage(`Unable to reach the API at ${API_BASE_URL || window.location.origin}. Check that the server is running.`);
     } finally {
       setSynthesizing(false);
     }
@@ -110,10 +160,14 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
   const handleApplyBlueprint = async () => {
     if (!synthesizedBlueprint) return;
     setDeploying(true);
+    setErrorMessage(null);
     try {
-      const res = await fetch('http://localhost:4000/autopilot/apply', {
+      const res = await fetch(`${API_BASE_URL}/autopilot/apply`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: (() => {
+          const t = typeof window !== 'undefined' ? (localStorage.getItem('dogfood_auth_token') || localStorage.getItem('dogfood_token') || 'demo-organizer-token') : 'demo-organizer-token';
+          return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t}` };
+        })(),
         body: JSON.stringify(synthesizedBlueprint),
       });
       if (res.ok) {
@@ -136,10 +190,14 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
         setTimeout(() => {
           onClose();
           window.location.href = '/organizer';
-        }, 1000);
+        }, 1500);
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        setErrorMessage(errorData.message || `Deployment failed: ${res.status} ${res.statusText}`);
       }
     } catch (e) {
       console.warn('Deploy error:', e);
+      setErrorMessage(`Unable to reach the API at ${API_BASE_URL || window.location.origin}. Check that the server is running.`);
     } finally {
       setDeploying(false);
     }
@@ -148,6 +206,7 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setDeploying(true);
+    setErrorMessage(null);
     try {
       const manualBlueprint = {
         event: {
@@ -161,11 +220,12 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
           pairwiseEloEnabled: true,
           autopilotMode: 'ASSIST',
         },
-        tracks: [
-          { id: 'track-1', name: manualForm.track1Name, tagline: manualForm.track1Tagline, color: '#10b981' },
-          { id: 'track-2', name: manualForm.track2Name, tagline: manualForm.track2Tagline, color: '#06b6d4' },
-          { id: 'track-3', name: manualForm.track3Name, tagline: manualForm.track3Tagline, color: '#8b5cf6' },
-        ],
+        tracks: manualTracks.map((t, idx) => ({
+          id: t.id || `track-${idx + 1}`,
+          name: t.name,
+          tagline: t.tagline,
+          color: t.color || '#10b981',
+        })),
         rubric: {
           version: '1.0.0',
           isLocked: true,
@@ -176,16 +236,22 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
             { id: 'c4', name: 'Domain Viability', weight: 0.20, minScore: 1, maxScore: 5, description: 'Deployment readiness and API ergonomics.' },
           ],
         },
-        seedProjects: [
-          { title: `${manualForm.name.split(' ')[0]} Core`, tagline: manualForm.track1Tagline, track: manualForm.track1Name, rank: 1, elo: 108.0, meanScore: 4.9 },
-          { title: 'Verifiable Protocol Alpha', tagline: manualForm.track2Tagline, track: manualForm.track2Name, rank: 2, elo: 98.4, meanScore: 4.7 },
-          { title: 'Edge Runtime Mesh', tagline: manualForm.track3Tagline, track: manualForm.track3Name, rank: 3, elo: 92.1, meanScore: 4.5 },
-        ]
+        seedProjects: manualTracks.map((t, idx) => ({
+          title: `${t.name.split(' ')[0]} Benchmark Core`,
+          tagline: t.tagline,
+          track: t.name,
+          rank: idx + 1,
+          elo: Number((108.0 - idx * 5.0).toFixed(1)),
+          meanScore: Number((4.9 - idx * 0.2).toFixed(1)),
+        }))
       };
 
-      const res = await fetch('http://localhost:4000/autopilot/apply', {
+      const res = await fetch(`${API_BASE_URL}/autopilot/apply`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: (() => {
+          const t = typeof window !== 'undefined' ? (localStorage.getItem('dogfood_auth_token') || localStorage.getItem('dogfood_token') || 'demo-organizer-token') : 'demo-organizer-token';
+          return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t}` };
+        })(),
         body: JSON.stringify(manualBlueprint),
       });
 
@@ -208,17 +274,23 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
         setTimeout(() => {
           onClose();
           window.location.href = '/organizer';
-        }, 1000);
+        }, 1500);
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        setErrorMessage(errorData.message || `Failed to create hackathon: ${res.status} ${res.statusText}`);
       }
     } catch (err) {
       console.warn('Manual create error:', err);
+      setErrorMessage(`Unable to reach the API at ${API_BASE_URL || window.location.origin}. Check that the server is running.`);
     } finally {
       setDeploying(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+      
+      
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
       {/* Dark frosted backdrop */}
       <div
         onClick={onClose}
@@ -261,14 +333,14 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
           </div>
 
           {/* Mode Switcher Tabs */}
-          <div className="relative z-10 flex items-center space-x-2 mt-5 p-1 bg-slate-950/70 border border-emerald-500/20 rounded-2xl w-fit text-xs font-mono">
+          <div className="relative z-10 flex flex-wrap items-center gap-2 mt-5 p-1.5 bg-slate-950/90 border border-emerald-500/30 rounded-2xl w-fit text-xs font-mono shadow-inner">
             <button
               type="button"
               onClick={() => setCreationMode('PROMPT')}
               className={`px-4 py-2 rounded-xl font-bold transition-all flex items-center space-x-2 cursor-pointer ${
                 creationMode === 'PROMPT'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-md shadow-emerald-500/20'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-md shadow-emerald-500/30 ring-1 ring-emerald-300'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
               }`}
             >
               <Sparkles className="w-4 h-4" />
@@ -279,8 +351,8 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
               onClick={() => setCreationMode('MANUAL')}
               className={`px-4 py-2 rounded-xl font-bold transition-all flex items-center space-x-2 cursor-pointer ${
                 creationMode === 'MANUAL'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-md shadow-emerald-500/20'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-md shadow-emerald-500/30 ring-1 ring-emerald-300'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
               }`}
             >
               <Sliders className="w-4 h-4" />
@@ -300,6 +372,23 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
                 <span className="font-bold block text-emerald-300">Deployment Complete</span>
                 <span>{deploySuccess}</span>
               </div>
+            </div>
+          )}
+
+          {/* Error Banner */}
+          {errorMessage && (
+            <div className="p-4 rounded-2xl bg-red-500/15 border border-red-500/40 text-red-200 flex items-center space-x-3 text-xs font-mono shadow-lg animate-in fade-in">
+              <X className="w-5 h-5 text-red-400 shrink-0" />
+              <div className="flex-1">
+                <span className="font-bold block text-red-300">Error</span>
+                <span>{errorMessage}</span>
+              </div>
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="p-1 rounded-lg hover:bg-red-500/20 text-red-300 hover:text-red-200 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           )}
 
@@ -356,18 +445,45 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
                     value={promptInput}
                     onChange={(e) => setPromptInput(e.target.value)}
                     placeholder="e.g. Host a 48-hour Autonomous AI Agents & Robotics Hackathon with $60k in prizes, 3 tracks, 4 blind judges per team..."
-                    className="w-full p-4 bg-slate-950 border border-emerald-500/30 rounded-2xl text-slate-100 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none shadow-inner"
+                    disabled={synthesizing}
+                    className="w-full p-4 pr-40 bg-slate-950 border border-emerald-500/30 rounded-2xl text-slate-100 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none shadow-inner disabled:opacity-60 disabled:cursor-not-allowed transition-opacity"
                   />
                   <button
                     type="button"
                     onClick={() => handleSynthesize()}
                     disabled={synthesizing}
-                    className="absolute right-3 bottom-3.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-mono font-bold shadow-md transition-all flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                    className={`absolute right-3 bottom-3.5 px-3.5 py-1.5 rounded-xl font-mono font-bold shadow-md transition-all flex items-center space-x-1.5 ${
+                      synthesizing
+                        ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 shadow-amber-500/50 shadow-lg animate-pulse cursor-not-allowed'
+                        : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 cursor-pointer hover:shadow-emerald-500/40 hover:scale-105 active:scale-95'
+                    } text-xs`}
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${synthesizing ? 'animate-spin' : ''}`} />
-                    <span>{synthesizing ? 'Synthesizing...' : 'Synthesize ⚡'}</span>
+                    {synthesizing ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span className="animate-pulse">Synthesizing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Synthesize ⚡</span>
+                      </>
+                    )}
                   </button>
                 </div>
+                
+                {/* Loading Splash Indicator */}
+                {synthesizing && (
+                  <div className="flex items-center justify-center space-x-2 p-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-400/20 to-amber-500/20 border border-amber-500/30 animate-pulse">
+                    <div className="relative">
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 animate-ping absolute" />
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 relative" />
+                    </div>
+                    <span className="text-xs font-mono text-amber-300 font-bold">
+                      AI Engine Processing Your Hackathon Blueprint...
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Synthesized Blueprint Live Preview */}
@@ -452,16 +568,42 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
                   </div>
 
                   {/* Deploy Action Bar */}
-                  <div className="pt-2">
+                  <div className="pt-2 space-y-3">
                     <button
                       type="button"
                       onClick={handleApplyBlueprint}
                       disabled={deploying}
-                      className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400 text-slate-950 font-black text-sm shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.01] active:scale-98 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                      className={`w-full py-3.5 rounded-2xl font-black text-sm shadow-lg transition-all flex items-center justify-center space-x-2 relative overflow-hidden ${
+                        deploying
+                          ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 shadow-amber-500/50 cursor-not-allowed animate-pulse'
+                          : 'bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400 text-slate-950 shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.01] active:scale-98 cursor-pointer'
+                      }`}
                     >
-                      <Rocket className={`w-4 h-4 ${deploying ? 'animate-bounce' : ''}`} />
-                      <span>{deploying ? 'Applying to Live Cluster...' : 'Deploy Blueprint Live to Cluster 🚀'}</span>
+                      {deploying && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" 
+                             style={{ animation: 'shimmer 2s infinite linear' }} />
+                      )}
+                      <Rocket className={`w-4 h-4 relative z-10 ${deploying ? 'animate-bounce' : ''}`} />
+                      <span className="relative z-10">{deploying ? 'Deploying to Live Cluster...' : 'Deploy Blueprint Live to Cluster 🚀'}</span>
                     </button>
+                    
+                    {/* 3D Loading Splash Effect */}
+                    {deploying && (
+                      <div className="flex items-center justify-center space-x-2 p-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-400/20 to-amber-500/20 border border-amber-500/30">
+                        <div className="relative flex items-center justify-center">
+                          {/* Outer pulsing ring */}
+                          <div className="absolute w-8 h-8 rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 animate-ping opacity-75" />
+                          {/* Middle ring */}
+                          <div className="absolute w-6 h-6 rounded-full bg-gradient-to-r from-yellow-400 to-amber-400 animate-pulse" />
+                          {/* Inner core */}
+                          <div className="relative w-4 h-4 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 shadow-lg shadow-amber-500/50" />
+                        </div>
+                        <div className="text-xs font-mono space-y-0.5">
+                          <div className="text-amber-300 font-bold animate-pulse">Deploying Hackathon Architecture...</div>
+                          <div className="text-amber-400/70 text-[10px]">Writing to MongoDB • Initializing Rubrics • Setting Up Tracks</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -478,6 +620,35 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
           {/* MODE 2: MANUAL FORM */}
           {creationMode === 'MANUAL' && (
             <form onSubmit={handleManualSubmit} className="space-y-4 text-xs font-mono">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 shadow-xs">
+                <div className="flex items-center space-x-2">
+                  <Sliders className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div>
+                    <span className="font-bold text-white text-sm block">Custom Blueprint Builder Mode</span>
+                    <span className="text-[11px] text-slate-400 font-normal">Manually configure event parameters, duration, prize pool, and tracks</span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setCreationMode('PROMPT')}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 hover:text-white border border-emerald-500/40 text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>⚡ Switch to AI Fast Mode</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      router.push('/organizer/create-event');
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1"
+                  >
+                    <span>Full Multi-Step Creator ↗</span>
+                  </button>
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-slate-300 block mb-1 font-semibold">Hackathon Name</label>
@@ -537,91 +708,119 @@ export default function CreateHackathonModal({ isOpen, onClose, onCreated }: Cre
                 </div>
               </div>
 
-              {/* Tracks Section */}
+              {/* Dynamic Tracks Section */}
               <div className="space-y-3 pt-2">
-                <span className="text-slate-300 font-bold uppercase tracking-wider block">
-                  Define Competition Tracks
-                </span>
-
-                {/* Track 1 */}
-                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-emerald-400 font-bold">Track #1</span>
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <div className="flex items-center space-x-2">
+                    <Layers className="w-4 h-4 text-emerald-400" />
+                    <span className="text-slate-200 font-bold uppercase tracking-wider">
+                      Define Competition Tracks ({manualTracks.length})
+                    </span>
                   </div>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Track Title"
-                    value={manualForm.track1Name}
-                    onChange={(e) => setManualForm({ ...manualForm, track1Name: e.target.value })}
-                    className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-white"
-                  />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Track Tagline & Scope"
-                    value={manualForm.track1Tagline}
-                    onChange={(e) => setManualForm({ ...manualForm, track1Tagline: e.target.value })}
-                    className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 text-[11px]"
-                  />
+                  <button
+                    type="button"
+                    onClick={handleAddTrack}
+                    className="px-3 py-1 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 hover:text-white border border-emerald-500/40 text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add Track</span>
+                  </button>
                 </div>
 
-                {/* Track 2 */}
-                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-cyan-400 font-bold">Track #2</span>
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Track Title"
-                    value={manualForm.track2Name}
-                    onChange={(e) => setManualForm({ ...manualForm, track2Name: e.target.value })}
-                    className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-white"
-                  />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Track Tagline & Scope"
-                    value={manualForm.track2Tagline}
-                    onChange={(e) => setManualForm({ ...manualForm, track2Tagline: e.target.value })}
-                    className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 text-[11px]"
-                  />
-                </div>
+                <div className="space-y-3">
+                  {manualTracks.map((track, idx) => (
+                    <div key={track.id || idx} className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2 shadow-xs transition-all hover:border-emerald-500/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span
+                            className="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                            style={{ backgroundColor: track.color }}
+                          />
+                          <span className="text-xs font-bold text-white font-mono">Track #{idx + 1}</span>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          {/* Color Selector Badges */}
+                          <div className="flex items-center space-x-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+                            {['#10b981', '#06b6d4', '#8b5cf6', '#ec4899', '#f59e0b', '#3b82f6'].map((c) => (
+                              <button
+                                key={c}
+                                type="button"
+                                onClick={() => handleTrackChange(idx, 'color', c)}
+                                style={{ backgroundColor: c }}
+                                className={`w-3.5 h-3.5 rounded-full transition-transform cursor-pointer ${
+                                  track.color === c ? 'scale-125 ring-2 ring-white' : 'opacity-70 hover:opacity-100'
+                                }`}
+                              />
+                            ))}
+                          </div>
 
-                {/* Track 3 */}
-                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-purple-400 font-bold">Track #3</span>
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Track Title"
-                    value={manualForm.track3Name}
-                    onChange={(e) => setManualForm({ ...manualForm, track3Name: e.target.value })}
-                    className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-white"
-                  />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Track Tagline & Scope"
-                    value={manualForm.track3Tagline}
-                    onChange={(e) => setManualForm({ ...manualForm, track3Tagline: e.target.value })}
-                    className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 text-[11px]"
-                  />
+                          {/* Delete Track Button */}
+                          {manualTracks.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTrack(idx)}
+                              className="p-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                              title="Delete Track"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <input
+                        type="text"
+                        required
+                        placeholder="Track Name (e.g. Autonomous AI Swarms)"
+                        value={track.name}
+                        onChange={(e) => handleTrackChange(idx, 'name', e.target.value)}
+                        className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-bold text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                      />
+                      <input
+                        type="text"
+                        required
+                        placeholder="Track Tagline & Scope (e.g. Decentralized agent coordination protocols)"
+                        value={track.tagline}
+                        onChange={(e) => handleTrackChange(idx, 'tagline', e.target.value)}
+                        className="w-full p-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-[11px] focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="pt-3">
+              <div className="pt-3 space-y-3">
                 <button
                   type="submit"
                   disabled={deploying}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-sm shadow-lg hover:scale-[1.01] transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                  className={`w-full py-3.5 rounded-2xl font-black text-sm shadow-lg transition-all flex items-center justify-center space-x-2 relative overflow-hidden ${
+                    deploying
+                      ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 shadow-amber-500/50 cursor-not-allowed animate-pulse'
+                      : 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.01] active:scale-98 cursor-pointer'
+                  }`}
                 >
-                  <Rocket className="w-4 h-4" />
-                  <span>{deploying ? 'Deploying Event...' : 'Launch Custom Hackathon 🚀'}</span>
+                  {deploying && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
+                  )}
+                  <Rocket className={`w-4 h-4 relative z-10 ${deploying ? 'animate-bounce' : ''}`} />
+                  <span className="relative z-10">{deploying ? 'Deploying Event...' : 'Launch Custom Hackathon 🚀'}</span>
                 </button>
+                
+                {/* 3D Loading Splash Effect */}
+                {deploying && (
+                  <div className="flex items-center justify-center space-x-2 p-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-400/20 to-amber-500/20 border border-amber-500/30">
+                    <div className="relative flex items-center justify-center">
+                      <div className="absolute w-8 h-8 rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 animate-ping opacity-75" />
+                      <div className="absolute w-6 h-6 rounded-full bg-gradient-to-r from-yellow-400 to-amber-400 animate-pulse" />
+                      <div className="relative w-4 h-4 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 shadow-lg shadow-amber-500/50" />
+                    </div>
+                    <div className="text-xs font-mono space-y-0.5">
+                      <div className="text-amber-300 font-bold animate-pulse">Creating Custom Hackathon...</div>
+                      <div className="text-amber-400/70 text-[10px]">Configuring tracks • Setting up rubrics • Initializing database</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </form>
           )}

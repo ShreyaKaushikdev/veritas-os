@@ -13,31 +13,31 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('register')
-  @Throttle({ default: { limit: 3, ttl: 3600000 } })
+  @Throttle({ default: { limit: 999999, ttl: 60000 } })
   async register(@Body() body: { email: string; password: string; name: string; role?: Role; judgeReferralCode?: string }) {
     return this.authService.register(body.email, body.password, body.name, body.role, body.judgeReferralCode);
   }
 
   @Post('verify-otp')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ default: { limit: 999999, ttl: 60000 } })
   async verifyOTP(@Body() body: { email: string; otp: string }) {
     return this.authService.verifyOTP(body.email, body.otp);
   }
 
   @Post('resend-otp')
-  @Throttle({ default: { limit: 3, ttl: 600000 } })
+  @Throttle({ default: { limit: 999999, ttl: 60000 } })
   async resendOTP(@Body() body: { email: string }) {
     return this.authService.resendOTP(body.email);
   }
 
   @Post('login')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ default: { limit: 999999, ttl: 60000 } })
   async login(@Body() body: { email: string; password: string }) {
     return this.authService.login(body.email, body.password);
   }
 
   @Post('google')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Throttle({ default: { limit: 999999, ttl: 60000 } })
   async googleLogin(@Body() body: { credential?: string; token?: string; email?: string; name?: string; googleId?: string }) {
     return this.authService.loginWithGoogle(body);
   }

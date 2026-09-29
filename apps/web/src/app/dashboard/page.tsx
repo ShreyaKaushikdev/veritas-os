@@ -46,6 +46,7 @@ import {
   Lock,
   Terminal
 } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function DashboardPage() {
   const [showBanner, setShowBanner] = useState(true);
@@ -59,12 +60,12 @@ export default function DashboardPage() {
 
   const refreshLiveStats = async () => {
     try {
-      const res = await fetch('http://localhost:4000/dashboard/stats');
+      const res = await fetch(`${API_BASE_URL}/dashboard/stats`);
       if (res.ok) {
         const data = await res.json();
         setLiveTelemetry(data);
       }
-      const dbRes = await fetch('http://localhost:4000/database/status');
+      const dbRes = await fetch(`${API_BASE_URL}/database/status`);
       if (dbRes.ok) {
         const dbData = await dbRes.json();
         setDbStatus(`MongoDB: ${dbData.database} (${dbData.collections.projects} projects, ${dbData.collections.ballots} ballots)`);
@@ -83,7 +84,7 @@ export default function DashboardPage() {
   const handleClearLiveDb = async () => {
     if (!confirm('Wipe all mock/seeded data and reset to 100% clean live database?')) return;
     try {
-      const res = await fetch('http://localhost:4000/database/clear', { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/database/clear`, { method: 'POST' });
       if (res.ok) {
         showToast('Clean Live Mode: All mock records wiped to 0.');
         await refreshLiveStats();

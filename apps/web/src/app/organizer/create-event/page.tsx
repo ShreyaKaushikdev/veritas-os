@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader, Wand2, FileText, Plus, X, ArrowRight } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 type CreationMethod = 'prompt' | 'manual' | null;
 
@@ -133,7 +134,7 @@ export default function CreateEventPage() {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if (token) headers.Authorization = `Bearer ${token}`;
 
-        const response = await fetch('http://localhost:4000/api/v1/events/generate-from-prompt', {
+        const response = await fetch(`${API_BASE_URL}/api/v1/events/generate-from-prompt`, {
           method: 'POST',
           headers,
           body: JSON.stringify({ prompt: promptInput }),
@@ -147,7 +148,7 @@ export default function CreateEventPage() {
       }
 
       if (!generatedData) {
-        const autoRes = await fetch('http://localhost:4000/autopilot/synthesize', {
+        const autoRes = await fetch(`${API_BASE_URL}/autopilot/synthesize`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: promptInput }),
@@ -264,7 +265,7 @@ export default function CreateEventPage() {
 
       let createdEvent: any = null;
       try {
-        const response = await fetch('http://localhost:4000/api/v1/events', {
+        const response = await fetch(`${API_BASE_URL}/api/v1/events`, {
           method: 'POST',
           headers,
           body: JSON.stringify(formData),
@@ -278,7 +279,7 @@ export default function CreateEventPage() {
 
       // Sync to live replica engine
       try {
-        await fetch('http://localhost:4000/autopilot/apply', {
+        await fetch(`${API_BASE_URL}/autopilot/apply`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

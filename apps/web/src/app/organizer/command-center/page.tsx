@@ -7,6 +7,7 @@ import {
   Award, Target, TrendingUp, AlertCircle, ChevronRight,
   Play, Pause, Power, Eye, Settings
 } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface CommandCenterData {
   event: {
@@ -85,7 +86,7 @@ export default function CommandCenterPage() {
 
       let loadedData: any = null;
       try {
-        const response = await fetch(`http://localhost:4000/api/v1/events/${eventId}/command-center`, { headers });
+        const response = await fetch(`${API_BASE_URL}/api/v1/events/${eventId}/command-center`, { headers });
         if (response.ok) {
           loadedData = await response.json();
         }
@@ -95,7 +96,7 @@ export default function CommandCenterPage() {
 
       if (!loadedData) {
         // Load from live telemetry
-        const statsRes = await fetch('http://localhost:4000/dashboard/stats');
+        const statsRes = await fetch(`${API_BASE_URL}/dashboard/stats`);
         if (statsRes.ok) {
           const stats = await statsRes.json();
           const evt = stats.event || {};

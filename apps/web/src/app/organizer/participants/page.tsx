@@ -6,6 +6,7 @@ import {
   Users, Search, Filter, Download, Mail, UserPlus, AlertCircle,
   CheckCircle2, ChevronDown, ArrowUpDown, Eye, MoreVertical
 } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface Participant {
   id: string;
@@ -35,7 +36,7 @@ export default function ParticipantsPage() {
 
   const fetchParticipants = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/v1/events/${eventId}/participants`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/events/${eventId}/participants`);
       if (response.ok) {
         const data = await response.json();
         setParticipants(data);
@@ -49,7 +50,7 @@ export default function ParticipantsPage() {
 
   const handleExportCSV = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/v1/events/${eventId}/audience/export`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/events/${eventId}/audience/export`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
